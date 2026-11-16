@@ -4,6 +4,15 @@ import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabas
 import type { Database } from "@/lib/supabase/database.types";
 import type { CreateMakamInput, KomentarInput, Kategori, Komentar, Makam, Statistik } from "@/types/graveyard";
 
+export interface BungaHariIni { sudahMenabur: boolean; serverNow: string; berlakuHingga?: string; }
+export class BungaSudahDitaburError extends Error {
+  constructor() {
+    super("Kamu sudah menabur bunga di makam ini hari ini.");
+    this.name = "BungaSudahDitaburError";
+  }
+}
+export interface LilinSaya { ids: string[]; }
+
 const STORAGE_KEY = "wacana-rip:v1";
 type SupabaseClient = ReturnType<typeof createSupabaseBrowserClient>;
 type MakamRow = Database["public"]["Tables"]["makam"]["Row"];
@@ -116,6 +125,7 @@ function mapMakam(row: MakamRow, komentar: Komentar[] = []): Makam {
     ...(row.kerugian_jam === null ? {} : { kerugianJam: Number(row.kerugian_jam) }),
     bunga: row.bunga_count,
     lilin: row.lilin_count > 0,
+    lilinCount: row.lilin_count,
     komentar,
     createdAt: row.created_at,
   };
@@ -188,7 +198,7 @@ export async function taburBunga(id: string): Promise<Makam> {
   if (!client) return localFallback(() => updateLocal(id, (makam) => ({ ...makam, bunga: makam.bunga + 1 })));
   const result = await client.rpc("tabur_bunga", { target_makam_id: id });
   throwSupabase(result.error);
-  if (!result.data.ok && result.data.code === "ALREADY_TODAY") throw new Error("Kamu sudah menabur bunga di makam ini hari ini.");
+  if (!result.data.ok && result.data.code === "ALREADY_TODAY") throw new BungaSudahDitaburError();
   if (!result.data.ok) throw new Error("Bunga belum bisa ditaburkan.");
   const makam = await getMakam(id);
   if (!makam) throw new Error("Makam tidak ditemukan.");
@@ -231,23 +241,44 @@ export async function getStatistik(): Promise<Statistik> {
   return { totalMakam: result.data?.total_makam ?? 0, totalBunga: Number(result.data?.total_bunga ?? 0), totalRupiah: Number(result.data?.total_rupiah ?? 0), totalJam: Number(result.data?.total_jam ?? 0) };
 }
 
-export async function getStatusBungaHariIni(id: string): Promise<boolean> {
-  const client = supabase();
-  if (!client) return localFallback(() => false);
-  const userId = await requireUser(client);
-  const hari = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
-  const result = await client.from("bunga").select("id").eq("makam_id", id).eq("user_id", userId).eq("hari", hari).maybeSingle();
-  throwSupabase(result.error);
-  return Boolean(result.data);
+function getWibDate(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(date);
 }
 
-export async function getLilinSaya(id: string): Promise<boolean> {
+export function getNextWibMidnight(date: Date): Date {
+  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta", year: "numeric", month: "2-digit", day: "2-digit" });
+  const parts = formatter.formatToParts(date).reduce<Record<string, string>>((result, part) => { result[part.type] = part.value; return result; }, {});
+  const next = new Date(`${parts.year}-${parts.month}-${parts.day}T00:00:00+07:00`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next;
+}
+
+export async function getStatusBungaHariIni(ids: string[]): Promise<Record<string, BungaHariIni>> {
   const client = supabase();
-  if (!client) return localFallback(() => Boolean(readLocal().find((makam) => makam.id === id)?.lilin));
+  if (!client) return localFallback(() => { const serverNow = new Date().toISOString(); const berlakuHingga = getNextWibMidnight(new Date(serverNow)).toISOString(); return Object.fromEntries(ids.map((id) => [id, { sudahMenabur: false, serverNow, berlakuHingga }])); });
+  if (!ids.length) return {};
   const userId = await requireUser(client);
-  const result = await client.from("lilin").select("makam_id").eq("makam_id", id).eq("user_id", userId).maybeSingle();
+  const serverNow = new Date().toISOString();
+  const result = await client.from("bunga").select("makam_id, hari, created_at").eq("user_id", userId).in("makam_id", ids);
   throwSupabase(result.error);
-  return Boolean(result.data);
+  type BungaStatusRow = { makam_id: string; hari: string; created_at: string };
+  const rows = (result.data ?? []) as BungaStatusRow[];
+  const rowsByMakam = new Map(rows.filter((row) => getWibDate(new Date(row.created_at)) === row.hari).map((row) => [row.makam_id, row]));
+  return Object.fromEntries(ids.map((id) => {
+    const row = rowsByMakam.get(id);
+    const statusServerNow = row?.created_at ?? serverNow;
+    return [id, { sudahMenabur: Boolean(row), serverNow: statusServerNow, berlakuHingga: getNextWibMidnight(new Date(statusServerNow)).toISOString() }];
+  }));
+}
+
+export async function getLilinSaya(ids: string[]): Promise<LilinSaya> {
+  const client = supabase();
+  if (!client) return localFallback(() => ({ ids: readLocal().filter((makam) => ids.includes(makam.id) && makam.lilin).map((makam) => makam.id) }));
+  if (!ids.length) return { ids: [] };
+  const userId = await requireUser(client);
+  const result = await client.from("lilin").select("makam_id").eq("user_id", userId).in("makam_id", ids);
+  throwSupabase(result.error);
+  return { ids: (result.data ?? []).map((row) => row.makam_id) };
 }
 
 export async function hapusMakam(id: string): Promise<void> {

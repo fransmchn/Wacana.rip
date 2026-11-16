@@ -18,16 +18,19 @@ interface TombstoneCardProps {
   onSelect: (makam: Makam) => void;
   onFlower: (id: string) => void;
   onCandle: (id: string) => void;
+  flowerStatus: "active" | "done" | "login";
+  flowerCountdown?: string;
+  candleMine: boolean;
   highlighted?: boolean;
 }
 
-export function TombstoneCard({ makam, onSelect, onFlower, onCandle, highlighted = false }: TombstoneCardProps) {
+export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatus, flowerCountdown, candleMine, highlighted = false }: TombstoneCardProps) {
   const tipe = getTipeNisan(makam.tanggalMulai, makam.tanggalMenyerah);
   const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
   const [flowerBurst, setFlowerBurst] = useState(false);
 
   function handleFlower() {
-    setFlowerBurst(true);
+    if (flowerStatus === "active") setFlowerBurst(true);
     onFlower(makam.id);
   }
 
@@ -52,11 +55,11 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, highlighted
           <p className="mt-4 line-clamp-2 text-center font-serif text-sm italic opacity-75">“{makam.epitaph}”</p>
         </div>
         <div className="mt-5 flex items-center justify-between gap-2 border-t border-current/15 pt-3" onClick={(event) => event.stopPropagation()}>
-          <button onClick={handleFlower} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs opacity-75 transition hover:bg-black/10 hover:opacity-100" aria-label={`Tabur bunga untuk ${makam.judul}`}>
-            <Flower2 size={15} aria-hidden="true" /> {makam.bunga}
+          <button disabled={flowerStatus === "done"} onClick={handleFlower} className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs opacity-75 transition hover:bg-black/10 hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50" aria-label={flowerStatus === "login" ? "Masuk untuk menabur" : `Tabur bunga untuk ${makam.judul}`}>
+            <Flower2 size={15} aria-hidden="true" /> {flowerStatus === "login" ? "Masuk untuk menabur" : flowerStatus === "done" ? `Sudah menabur · ${flowerCountdown ?? "..."}` : `Tabur bunga · ${makam.bunga}`}
           </button>
-          <button onClick={() => onCandle(makam.id)} className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs transition hover:bg-black/10 ${makam.lilin ? "opacity-100" : "opacity-55 hover:opacity-100"}`} aria-pressed={makam.lilin}>
-            <Flame size={15} aria-hidden="true" /> {makam.lilin ? "Menyala" : "Nyalakan"}
+          <button onClick={() => onCandle(makam.id)} className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs transition hover:bg-black/10 ${candleMine ? "opacity-100" : "opacity-55 hover:opacity-100"}`} aria-pressed={candleMine}>
+            <Flame size={15} aria-hidden="true" /> {candleMine ? "Lilin menyala" : "Nyalakan lilin"} · {makam.lilinCount ?? (makam.lilin ? 1 : 0)}
           </button>
         </div>
       </div>

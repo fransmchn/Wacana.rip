@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginModal } from "@/components/LoginModal";
 import { AmbientBackground } from "@/components/AmbientBackground";
@@ -14,9 +14,10 @@ import { TombstoneGrid } from "@/components/TombstoneGrid";
 import { useGraveyard } from "@/hooks/useGraveyard";
 import type { Kategori, Makam } from "@/types/graveyard";
 import { getDurasiHari } from "@/lib/utils";
+import { useWibCountdown } from "@/components/useWibCountdown";
 
 export default function Home() {
-  const { makam, statistik, loading, error, bunga, lilin, komentar, kuburkan } = useGraveyard();
+  const { makam, statistik, loading, error, bunga, lilin, komentar, kuburkan, bungaStatus, lilinSaya, refreshPersonalStatus } = useGraveyard();
   const { user, configured, signOut } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const [category, setCategory] = useState<"semua" | Kategori>("semua");
@@ -27,7 +28,6 @@ export default function Home() {
   const [certificate, setCertificate] = useState<Makam | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const requireLogin = (action: () => void) => { if (!user) { setLoginOpen(true); return; } action(); };
-
   const filtered = useMemo(() => makam
     .filter((item) => category === "semua" || item.kategori === category)
     .filter((item) => `${item.judul} ${item.penyebab}`.toLowerCase().includes(search.toLowerCase().trim()))
@@ -36,6 +36,12 @@ export default function Home() {
       if (sort === "pendek") return getDurasiHari(a.tanggalMulai, a.tanggalMenyerah) - getDurasiHari(b.tanggalMulai, b.tanggalMenyerah);
       return new Date(b.tanggalMenyerah).getTime() - new Date(a.tanggalMenyerah).getTime();
     }), [makam, category, sort, search]);
+  const visibleIds = useMemo(() => filtered.map((item) => item.id), [filtered]);
+  const countdownTargets = useMemo(() => Object.values(bungaStatus).filter((status) => status.sudahMenabur && status.berlakuHingga).map((status) => status.berlakuHingga as string), [bungaStatus]);
+  const countdowns = useWibCountdown(countdownTargets);
+  useEffect(() => { void refreshPersonalStatus(user?.id, visibleIds); }, [user?.id, visibleIds, refreshPersonalStatus]);
+  const flowerStatus = (id: string): "active" | "done" | "login" => !user ? "login" : bungaStatus[id]?.sudahMenabur ? "done" : "active";
+  const flowerCountdown = (id: string) => { const target = bungaStatus[id]?.berlakuHingga; return target ? countdowns[target] : undefined; };
 
   return (
     <main id="top" className="relative min-h-screen overflow-hidden pb-20">
@@ -65,10 +71,10 @@ export default function Home() {
         <FilterBar category={category} sort={sort} search={search} onCategory={setCategory} onSort={setSort} onSearch={setSearch} />
         {error && <p role="alert" className="mt-5 rounded-xl border border-[#d87078]/40 bg-[#d87078]/10 px-4 py-3 text-sm text-[#f08c91]">{error}</p>}
         <div className="mt-8">
-          {loading ? <div className="panel rounded-2xl px-6 py-16 text-center text-sm text-[#a7a69f]">Menyiapkan tanah pemakaman...</div> : <TombstoneGrid makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => void bunga(id))} onCandle={(id) => requireLogin(() => void lilin(id))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} />}
+          {loading ? <div className="panel rounded-2xl px-6 py-16 text-center text-sm text-[#a7a69f]">Menyiapkan tanah pemakaman...</div> : <TombstoneGrid makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => void bunga(id))} onCandle={(id) => requireLogin(() => void lilin(id))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} candleMine={(id) => lilinSaya.has(id)} />}
         </div>
       </section>
-      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => void bunga(id))} onCandle={(id) => requireLogin(() => void lilin(id))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} />}
+      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => void bunga(id))} onCandle={(id) => requireLogin(() => void lilin(id))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} candleMine={lilinSaya.has(selected.id)} />}
       {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={(newMakam) => { setBuryOpen(false); setHighlightedId(newMakam.id); window.setTimeout(() => setHighlightedId(null), 1900); window.setTimeout(() => setCertificate(newMakam), 900); }} />}
       {certificate && <DeathCertificateModal makam={certificate} onClose={() => setCertificate(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}

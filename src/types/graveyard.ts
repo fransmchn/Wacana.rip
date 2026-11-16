@@ -25,6 +25,7 @@ export interface Makam {
   kerugianJam?: number;
   bunga: number;
   lilin: boolean;
+  lilinCount?: number;
   komentar: Komentar[];
   createdAt: string;
 }
