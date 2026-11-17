@@ -4,9 +4,9 @@ import { useEffect, useId, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { IconButton } from "./IconButton";
 
-interface DialogProps { open: boolean; title: string; onClose: () => void; children: ReactNode; className?: string; }
+interface DialogProps { open: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; className?: string; }
 
-export function Dialog({ open, title, onClose, children, className = "" }: DialogProps) {
+export function Dialog({ open, title, onClose, children, footer, className = "" }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const titleId = useId();
@@ -26,9 +26,12 @@ export function Dialog({ open, title, onClose, children, className = "" }: Dialo
     };
     document.addEventListener("keydown", handler);
     const previousOverflow = document.body.style.overflow;
+    const previousPadding = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = "hidden";
-    return () => { document.removeEventListener("keydown", handler); document.body.style.overflow = previousOverflow; window.requestAnimationFrame(() => { if (previousFocus.current?.isConnected) previousFocus.current.focus(); else document.querySelector<HTMLElement>("[aria-label=\"Menu profil\"]")?.focus(); }); };
+    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
+    return () => { document.removeEventListener("keydown", handler); document.body.style.overflow = previousOverflow; document.body.style.paddingRight = previousPadding; window.requestAnimationFrame(() => { if (previousFocus.current?.isConnected) previousFocus.current.focus(); else document.querySelector<HTMLElement>("[aria-label=\"Menu profil\"]")?.focus(); }); };
   }, [open, onClose]);
   if (!open) return null;
-  return <div className="ui-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`ui-dialog ${className}`}><div className="ui-dialog-header"><h2 id={titleId}>{title}</h2><IconButton label="Tutup" onClick={onClose}><X size={18} /></IconButton></div>{children}</div></div>;
+  return <div className="ui-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`ui-dialog ${className}`}><div className="ui-dialog-header"><h2 id={titleId}>{title}</h2><IconButton label="Tutup" onClick={onClose}><X size={18} /></IconButton></div><div className="ui-dialog-body">{children}</div>{footer && <div className="ui-dialog-footer">{footer}</div>}</div></div>;
 }
