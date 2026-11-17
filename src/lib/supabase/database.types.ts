@@ -10,7 +10,7 @@ type Table<Row, Insert = Row, Update = Partial<Insert>> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<{ id: string; display_name: string; created_at: string }, { id?: string; display_name?: string; created_at?: string }, { display_name?: string }>;
+      profiles: Table<{ id: string; display_name: string; avatar_url: string | null; username: string | null; bio: string | null; updated_at: string; created_at: string }, { id?: string; display_name?: string; avatar_url?: string | null; username?: string | null; bio?: string | null; updated_at?: string; created_at?: string }, { display_name?: string; avatar_url?: string | null; username?: string | null; bio?: string | null; updated_at?: string; created_at?: string }>;
       makam: Table<{
         id: string;
         user_id: string | null;
@@ -42,6 +42,7 @@ export type Database = {
     Functions: {
       tabur_bunga: { Args: { target_makam_id: string }; Returns: { ok: boolean; code?: string; bunga_count?: number } };
       toggle_lilin: { Args: { target_makam_id: string }; Returns: { ok: boolean; code?: string; enabled?: boolean; lilin_count?: number } };
+      my_profile_stats: { Args: Record<string, never>; Returns: { wacana_dikubur: number; bunga_ditabur: number; lilin_dinyalakan: number }[] };
     };
     CompositeTypes: never;
     Enums: { kategori: "skripsi" | "koding" | "desain" | "bisnis" | "resolusi" | "hubungan" | "pribadi" | "pekerjaan" | "keluarga" | "kesehatan" | "perjalanan" | "lainnya" };

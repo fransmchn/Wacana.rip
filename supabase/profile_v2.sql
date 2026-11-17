@@ -95,6 +95,22 @@ $$;
 
 revoke all on function public.my_profile_stats() from public;
 grant execute on function public.my_profile_stats() to authenticated;
+revoke execute on function public.my_profile_stats() from anon;
+
+-- Hardening handle_new_user
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare v_name text := left(btrim(coalesce(new.raw_user_meta_data->>'full_name', '')), 32);
+begin
+  if char_length(v_name) < 2 then v_name := 'Anonim'; end if;
+  insert into public.profiles (id, display_name) values (new.id, v_name) on conflict (id) do nothing;
+  return new;
+end;
+$$;
 
 -- Storage bucket and policies. Existing avatars bucket is left untouched.
 do $$

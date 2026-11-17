@@ -26,7 +26,7 @@ import { useProfile } from "@/hooks/useProfile";
 export default function Home() {
   const { makam, statistik, loading, error, bunga, lilin, komentar, kuburkan, bungaStatus, lilinSaya, refresh, refreshPersonalStatus } = useGraveyard();
   const { user, configured, signOut } = useAuth();
-  const { display: profile, mutate: mutateProfile } = useProfile(user);
+  const { profile: profileRecord, display: profile, mutate: mutateProfile } = useProfile(user);
   const [loginOpen, setLoginOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [category, setCategory] = useState<"semua" | Kategori>("semua");
@@ -107,7 +107,7 @@ export default function Home() {
       {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={(newMakam) => { setBuryOpen(false); setHighlightedId(newMakam.id); window.setTimeout(() => setHighlightedId(null), 1900); window.setTimeout(() => setCertificate(newMakam), 900); }} />}
       {certificate && <DeathCertificateModal makam={certificate} onClose={() => setCertificate(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
-      {profileOpen && user && <ProfileModal initialName={profile.name} onClose={() => setProfileOpen(false)} onSave={async (name) => { await mutateProfile({ display_name: name }); }} />}
+      {profileOpen && user && <ProfileModal user={user} profile={profileRecord} onClose={() => setProfileOpen(false)} onSave={async (patch) => { await mutateProfile(patch); }} onLogout={() => void signOut()} />}
       <Footer />
     </main>
   );

@@ -19,7 +19,9 @@ function initialsFor(name: string): string {
 export function getProfileDisplay(user: User | null, profile?: ProfileRecord | null): ProfileDisplay {
   const email = user?.email ?? "";
   const name = profile?.display_name?.trim() || user?.user_metadata.full_name?.trim() || email || "Anonim";
-  return { name, email, initials: initialsFor(name), avatarUrl: profile?.avatar_url ?? user?.user_metadata.avatar_url ?? null, username: profile?.username ?? null, bio: profile?.bio ?? "", updatedAt: profile?.updated_at ?? null };
+  const rawAvatar = profile?.avatar_url ?? user?.user_metadata.avatar_url ?? null;
+  const avatar = resolveAvatar(rawAvatar, profile?.updated_at);
+  return { name, email, initials: initialsFor(name), avatarUrl: avatar.type === "image" ? avatar.url ?? null : rawAvatar, username: profile?.username ?? null, bio: profile?.bio ?? "", updatedAt: profile?.updated_at ?? null };
 }
 
 export function resolveAvatar(avatarUrl: string | null | undefined, updatedAt?: string | null): { type: "image" | "preset" | "initials"; url?: string; key?: string } {

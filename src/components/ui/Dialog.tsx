@@ -12,7 +12,7 @@ export function Dialog({ open, title, onClose, children, className = "" }: Dialo
   useEffect(() => {
     if (!open) return;
     previousFocus.current = document.activeElement as HTMLElement | null;
-    const first = dialogRef.current?.querySelector<HTMLElement>("button, input, select, textarea, [tabindex=\"0\"]");
+    const first = dialogRef.current?.querySelector<HTMLElement>("[data-autofocus], button, input, select, textarea, [tabindex=\"0\"]");
     first?.focus();
     const handler = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
