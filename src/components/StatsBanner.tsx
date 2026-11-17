@@ -20,7 +20,7 @@ export function StatsBanner({ statistik }: StatsBannerProps) {
     { label: "Jam terbuang", value: statistik.totalJam, full: `${statistik.totalJam.toLocaleString("id-ID")} jam`, icon: Clock3, tone: "rose", suffix: " jam" },
   ];
 
-  return <section ref={ref} aria-label="Statistik pemakaman" className="panel stats-grid"><h2 className="sr-only">Statistik TPU Wacana</h2>{items.map(({ label, value, full, icon: Icon, tone, compact, suffix }) => <div key={label} className="stat-card"><span className={`stat-icon stat-icon-${tone}`}><Icon size={18} aria-hidden="true" /></span><Tooltip label={full}><span className="stat-value-wrap" tabIndex={0} aria-label={full}><AnimatedNumber value={value} compact={compact} suffix={suffix} inView={inView} reducedMotion={reducedMotion} /><span className="sr-only">{full}</span></span></Tooltip><p className="stat-label">{label}</p></div>)}</section>;
+  return <section ref={ref} aria-label="Statistik pemakaman" className="surface-panel stats-grid"><h2 className="sr-only">Statistik TPU Wacana</h2>{items.map(({ label, value, full, icon: Icon, tone, compact, suffix }) => <div key={label} className="stat-card"><span className={`stat-icon stat-icon-${tone}`}><Icon size={18} aria-hidden="true" /></span><Tooltip label={full}><span className="stat-value-wrap" tabIndex={0} aria-label={full}><AnimatedNumber value={value} compact={compact} suffix={suffix} inView={inView} reducedMotion={reducedMotion} /><span className="sr-only">{full}</span></span></Tooltip><p className="stat-label">{label}</p></div>)}</section>;
 }
 
 function AnimatedNumber({ value, compact = false, suffix = "", inView, reducedMotion }: { value: number; compact?: boolean; suffix?: string; inView: boolean; reducedMotion: boolean | null }) {

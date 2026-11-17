@@ -1,4 +1,3 @@
-@"
 node_modules/
 .next/
 out/
@@ -7,4 +6,6 @@ build/
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
-"@ | Out-File -Encoding utf8 .gitignore
+qa/screens/
+qa/ui-results.json
+qa/qa-output.txt

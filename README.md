@@ -38,7 +38,10 @@ Buka `http://localhost:3000`.
 npm run lint
 npm run build
 npm audit
+npm run qa:ui
 ```
+
+Panduan token, primitive, preview `/dev/ui`, dan QA ada di [`docs/UI-GUIDE.md`](docs/UI-GUIDE.md). QA Playwright hanya devDependency dan `/dev/ui` ditolak pada production.
 
 Statistik MVP localStorage bersifat lokal. Setelah service Supabase diaktifkan, statistik dibaca dari agregat database.
 

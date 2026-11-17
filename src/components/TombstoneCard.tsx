@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Flower2, Flame, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useState, type CSSProperties } from "react";
 import { FlowerBurst } from "@/components/FlowerBurst";
 import { Badge } from "@/components/ui/Badge";
@@ -30,6 +30,7 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
   const tipe = getTipeNisan(makam.tanggalMulai, makam.tanggalMenyerah);
   const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
   const [flowerBurst, setFlowerBurst] = useState(false);
+  const reducedMotion = useReducedMotion();
   const isNew = durasi < 1;
   const candleCount = makam.lilinCount ?? (makam.lilin ? 1 : 0);
 
@@ -38,7 +39,7 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
     onFlower(makam.id);
   }
 
-  return <motion.article layout initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .3 }} className={`tombstone tombstone-${tipe} ${makam.lilin ? "is-lit" : ""} ${highlighted ? "tombstone-new" : ""}`} style={style} onClick={(event) => { if (event.target === event.currentTarget) onSelect(makam); }} onKeyDown={(event) => { if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(makam); } }} tabIndex={0} aria-label={`Buka detail ${makam.judul}`}>
+  return <motion.article layout initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reducedMotion ? 0 : 0.3 }} className={`tombstone tombstone-${tipe} ${makam.lilin ? "is-lit" : ""} ${highlighted ? "tombstone-new" : ""}`} style={style} onClick={(event) => { if (event.target === event.currentTarget) onSelect(makam); }} onKeyDown={(event) => { if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(makam); } }} tabIndex={0} aria-label={`Buka detail ${makam.judul}`}>
     <FlowerBurst active={flowerBurst} onDone={() => setFlowerBurst(false)} />
     <div className="tombstone-cap" aria-hidden="true" />
     <div className="tombstone-body">
