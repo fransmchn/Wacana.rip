@@ -17,9 +17,16 @@ export function useAuth() {
     }
 
     let active = true;
-    void client.auth.getUser().then(({ data }) => {
+    void client.auth.getUser().then(({ data, error }) => {
+      if (error) console.error("[wacana-auth] user lookup failed", error.message);
       if (active) {
         setUser(data.user);
+        setLoading(false);
+      }
+    }).catch((error: unknown) => {
+      console.error("[wacana-auth] user lookup failed", error);
+      if (active) {
+        setUser(null);
         setLoading(false);
       }
     });
