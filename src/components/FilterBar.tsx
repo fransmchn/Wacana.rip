@@ -5,11 +5,18 @@ export type SortKey = "terbaru" | "bunga" | "pendek";
 
 const categories: { value: "semua" | Kategori; label: string }[] = [
   { value: "semua", label: "Semua" },
-  { value: "skripsi", label: "Skripsi & Riset" },
-  { value: "koding", label: "Koding & Tech" },
-  { value: "desain", label: "Desain & Karya" },
-  { value: "bisnis", label: "Bisnis Wacana" },
-  { value: "resolusi", label: "Resolusi & Hobi" },
+  { value: "skripsi", label: "Skripsi & riset" },
+  { value: "koding", label: "Koding & teknologi" },
+  { value: "desain", label: "Desain & karya" },
+  { value: "bisnis", label: "Bisnis & usaha" },
+  { value: "resolusi", label: "Resolusi & hobi" },
+  { value: "hubungan", label: "Hubungan" },
+  { value: "pribadi", label: "Hal pribadi" },
+  { value: "pekerjaan", label: "Pekerjaan & karier" },
+  { value: "keluarga", label: "Keluarga" },
+  { value: "kesehatan", label: "Kesehatan" },
+  { value: "perjalanan", label: "Perjalanan" },
+  { value: "lainnya", label: "Lainnya" },
 ];
 
 interface FilterBarProps {

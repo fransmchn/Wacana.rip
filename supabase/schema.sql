@@ -10,7 +10,7 @@ create table if not exists public.makam (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users on delete set null,
   judul text not null check (char_length(judul) between 1 and 120),
-  kategori text not null check (kategori in ('skripsi','koding','desain','bisnis','resolusi')),
+  kategori text not null check (kategori in ('skripsi','koding','desain','bisnis','resolusi','hubungan','pribadi','pekerjaan','keluarga','kesehatan','perjalanan','lainnya')),
   tampil_anonim boolean not null default false,
   tanggal_mulai date not null,
   tanggal_menyerah date not null check (tanggal_menyerah >= tanggal_mulai and tanggal_menyerah <= current_date),
@@ -84,6 +84,9 @@ begin
   return jsonb_build_object('ok', true, 'enabled', enabled, 'lilin_count', new_count);
 end;
 $$;
+
+alter table public.makam drop constraint if exists makam_kategori_check;
+alter table public.makam add constraint makam_kategori_check check (kategori in ('skripsi','koding','desain','bisnis','resolusi','hubungan','pribadi','pekerjaan','keluarga','kesehatan','perjalanan','lainnya'));
 
 create or replace view public.statistik as
 select count(*)::integer as total_makam, coalesce(sum(bunga_count), 0)::bigint as total_bunga, coalesce(sum(kerugian_rupiah), 0)::bigint as total_rupiah, coalesce(sum(kerugian_jam), 0)::numeric as total_jam from public.makam;

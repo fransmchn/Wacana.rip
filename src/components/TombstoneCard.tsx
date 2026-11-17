@@ -11,6 +11,13 @@ const categoryLabel: Record<Makam["kategori"], string> = {
   desain: "Desain",
   bisnis: "Bisnis",
   resolusi: "Resolusi",
+  hubungan: "Hubungan",
+  pribadi: "Pribadi",
+  pekerjaan: "Pekerjaan",
+  keluarga: "Keluarga",
+  kesehatan: "Kesehatan",
+  perjalanan: "Perjalanan",
+  lainnya: "Lainnya",
 };
 
 interface TombstoneCardProps {

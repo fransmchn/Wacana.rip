@@ -15,7 +15,7 @@ export type Database = {
         id: string;
         user_id: string | null;
         judul: string;
-        kategori: "skripsi" | "koding" | "desain" | "bisnis" | "resolusi";
+        kategori: "skripsi" | "koding" | "desain" | "bisnis" | "resolusi" | "hubungan" | "pribadi" | "pekerjaan" | "keluarga" | "kesehatan" | "perjalanan" | "lainnya";
         tampil_anonim: boolean;
         tanggal_mulai: string;
         tanggal_menyerah: string;

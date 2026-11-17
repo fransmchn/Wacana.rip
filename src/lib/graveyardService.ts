@@ -2,7 +2,7 @@ import { seedData } from "@/lib/seedData";
 import { createId } from "@/lib/utils";
 import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
-import type { CreateMakamInput, KomentarInput, Kategori, Komentar, Makam, Statistik } from "@/types/graveyard";
+import { KATEGORI, type CreateMakamInput, type KomentarInput, type Kategori, type Komentar, type Makam, type Statistik } from "@/types/graveyard";
 
 export interface BungaHariIni { sudahMenabur: boolean; serverNow: string; berlakuHingga?: string; }
 export class BungaSudahDitaburError extends Error {
@@ -94,8 +94,8 @@ function assertInput(input: CreateMakamInput): CreateMakamInput {
     kerugianTeks: cleanText(input.kerugianTeks, 280),
   };
   if (!clean.judul) throw new Error("Nama wacana wajib diisi.");
-  const categories: Kategori[] = ["skripsi", "koding", "desain", "bisnis", "resolusi"];
-  if (!categories.includes(clean.kategori)) throw new Error("Kategori tidak valid.");
+  const categories = new Set<Kategori>([...KATEGORI]);
+  if (!categories.has(clean.kategori)) throw new Error("Kategori tidak valid.");
   assertDate(clean.tanggalMulai, "Tanggal mulai");
   assertDate(clean.tanggalMenyerah, "Tanggal menyerah");
   if (clean.tanggalMenyerah < clean.tanggalMulai) throw new Error("Tanggal gugur tidak boleh sebelum tanggal lahir.");

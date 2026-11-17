@@ -1,4 +1,4 @@
-export const KATEGORI = ["skripsi", "koding", "desain", "bisnis", "resolusi"] as const;
+export const KATEGORI = ["skripsi", "koding", "desain", "bisnis", "resolusi", "hubungan", "pribadi", "pekerjaan", "keluarga", "kesehatan", "perjalanan", "lainnya"] as const;
 export type Kategori = (typeof KATEGORI)[number];
 
 export type TipeNisan = "kayu" | "granit" | "marmer";
