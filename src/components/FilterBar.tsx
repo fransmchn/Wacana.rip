@@ -23,7 +23,7 @@ interface FilterBarProps {
 
 export function FilterBar({ category, sort, search, onCategory, onSort, onSearch }: FilterBarProps) {
   return (
-    <div className="space-y-4">
+    <div className="filter-shell space-y-4">
       <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[.16em] text-[#a7a69f]">
         <SlidersHorizontal size={15} aria-hidden="true" />
         Jelajah TPU Wacana
@@ -43,7 +43,7 @@ export function FilterBar({ category, sort, search, onCategory, onSort, onSearch
           ))}
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="relative block sm:min-w-60">
+          <label className="relative block min-w-0 sm:min-w-60">
             <span className="sr-only">Cari judul atau penyebab</span>
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#6c6b67]" aria-hidden="true" />
             <input value={search} onChange={(event) => onSearch(event.target.value)} placeholder="Cari di pemakaman..." className="h-10 w-full rounded-full border border-[#ffffff1a] bg-[#ffffff08] pl-9 pr-4 text-sm text-[#f4f1e9] placeholder:text-[#6c6b67] focus:border-[#d87078]" />

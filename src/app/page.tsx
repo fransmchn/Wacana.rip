@@ -48,12 +48,17 @@ export default function Home() {
       <AmbientBackground />
       <Header onBury={() => requireLogin(() => setBuryOpen(true))} userName={user?.user_metadata.full_name ?? user?.email ?? undefined} onLogin={() => setLoginOpen(true)} onLogout={() => void signOut()} />
       {!configured && <div className="container-shell mt-2"><p role="status" className="rounded-xl border border-[#d8ad69]/30 bg-[#d8ad69]/10 px-4 py-3 text-sm text-[#d8ad69]">{process.env.NODE_ENV === "production" ? "Supabase belum dikonfigurasi. Isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY." : "Mode lokal aktif untuk development. Login dan aksi tersimpan server menunggu konfigurasi Supabase."}</p></div>}
-      <section className="container-shell pb-14 pt-10 sm:pb-20 sm:pt-16">
-        <div className="max-w-3xl">
-          <p className="eyebrow">T P U · W A C A N A</p>
-          <h1 className="mt-5 max-w-2xl text-4xl font-semibold leading-[1.05] tracking-[-.04em] text-[#f4f1e9] sm:text-6xl">Di sini, kegagalan punya tempat untuk pulang.</h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-[#a7a69f]">Kuburkan ide, tugas, atau proyek yang kandas dengan layak. Tidak semua yang gagal harus dilupakan.</p>
-          <ScrollCue />
+      <section className="container-shell pb-12 pt-8 sm:pb-20 sm:pt-12">
+        <div className="hero-wrap px-5 py-8 sm:px-10 sm:py-12">
+          <div className="hero-copy max-w-3xl">
+            <p className="eyebrow">T P U · W A C A N A</p>
+            <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.04] tracking-[-.045em] text-[#f4f1e9] sm:mt-5 sm:text-6xl">Di sini, kegagalan punya tempat untuk pulang.</h1>
+            <p className="mt-5 max-w-xl text-sm leading-6 text-[#a7a69f] sm:mt-6 sm:text-base sm:leading-7">Kuburkan ide, tugas, atau proyek yang kandas dengan layak. Tidak semua yang gagal harus dilupakan.</p>
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <button onClick={() => requireLogin(() => setBuryOpen(true))} className="min-h-11 rounded-full bg-[#d87078] px-5 text-sm font-semibold text-[#211116] transition hover:-translate-y-0.5 hover:bg-[#f08c91]">+ Kuburkan wacana</button>
+              <ScrollCue />
+            </div>
+          </div>
         </div>
       </section>
       <section className="container-shell" aria-labelledby="stats-title">
