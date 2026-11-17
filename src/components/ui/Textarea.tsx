@@ -12,8 +12,9 @@ export function Textarea({ label, id, helperText, error, showCounter = false, ma
   const describedBy = props["aria-describedby"] ?? (feedbackId && (error || helperText) ? feedbackId : undefined);
   const count = typeof value === "string" ? value.length : typeof defaultValue === "string" ? defaultValue.length : undefined;
   return <label className="ui-field">
-    {label && <span className="ui-field-label"><span>{label}</span>{showCounter && maxLength && <span className="ui-counter">{count ?? 0}/{maxLength}</span>}</span>}
+    {label && <span className="ui-field-label">{label}</span>}
     <textarea {...props} id={id} aria-describedby={describedBy} maxLength={maxLength} value={value} defaultValue={defaultValue} aria-invalid={Boolean(error)} className={`ui-textarea ${className}`} />
+    {showCounter && maxLength && <span className="ui-counter ui-counter-below">{count ?? 0}/{maxLength}</span>}
     {(error || helperText) && <span id={feedbackId} className={`ui-field-help ${error ? "ui-field-error" : ""}`}>{error ?? helperText}</span>}
   </label>;
 }

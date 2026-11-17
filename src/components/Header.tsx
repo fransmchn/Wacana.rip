@@ -15,9 +15,10 @@ interface HeaderProps {
   onEditProfile: () => void;
   onLogout: () => void;
   ctaVisible?: boolean;
+  profileMenuOpen?: boolean;
 }
 
-export function Header({ onBury, profile, onLogin, onEditProfile, onLogout, ctaVisible = false }: HeaderProps) {
+export function Header({ onBury, profile, onLogin, onEditProfile, onLogout, ctaVisible = false, profileMenuOpen = false }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 8); window.addEventListener("scroll", onScroll, { passive: true }); onScroll(); return () => window.removeEventListener("scroll", onScroll); }, []);
   return <header className={`site-header ${scrolled ? "site-header-scrolled" : ""}`}><div className="container-shell site-header-inner">
@@ -26,7 +27,7 @@ export function Header({ onBury, profile, onLogin, onEditProfile, onLogout, ctaV
       {!profile && <Button variant="secondary" size="md" onClick={onLogin}>Masuk</Button>}
       <Button className={`header-cta-desktop ${ctaVisible ? "header-cta-hidden" : ""}`} size="md" onClick={onBury}><Plus size={16} strokeWidth={2.5} aria-hidden="true" />Kuburkan Wacana</Button>
       <IconButton className="header-cta-mobile" variant="primary" size="md" label="Kuburkan wacana" onClick={onBury}><Plus size={18} strokeWidth={2.5} aria-hidden="true" /></IconButton>
-      {profile && <DropdownMenu label="Menu profil" trigger={<Avatar name={profile.name} initials={profile.initials} src={profile.avatarUrl} tone={profile.avatarTone} size="md" />}>
+      {profile && <DropdownMenu defaultOpen={profileMenuOpen} label="Menu profil" trigger={<Avatar name={profile.name} initials={profile.initials} src={profile.avatarUrl} tone={profile.avatarTone} size="md" />}>
         <DropdownLabel><span className="ui-profile-menu-head"><Avatar name={profile.name} initials={profile.initials} src={profile.avatarUrl} tone={profile.avatarTone} size="md" /><span><strong>{profile.name}</strong><small>{profile.email}</small></span></span></DropdownLabel>
         <DropdownSeparator /><DropdownItem icon={<Pencil size={16} />} onSelect={onEditProfile}>Edit profil</DropdownItem><DropdownItem icon={<LogOut size={16} />} danger onSelect={onLogout}>Keluar</DropdownItem>
       </DropdownMenu>}

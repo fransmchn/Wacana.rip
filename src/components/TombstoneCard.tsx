@@ -44,14 +44,14 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
     <div className="tombstone-cap" aria-hidden="true" />
     <div className="tombstone-body">
       <div className="tombstone-topline">
-        <div className="tombstone-badges"><Badge tone="neutral">{categoryLabel[makam.kategori]}</Badge>{isNew && <Badge tone="accent">Baru</Badge>}</div>
+        <div className="tombstone-badges"><Badge className="tombstone-badge">{categoryLabel[makam.kategori]}</Badge>{isNew && <Badge className="tombstone-badge">Baru</Badge>}</div>
         <span className="tombstone-id">#{makam.id.slice(-4)}</span>
       </div>
       <Sparkles className="tombstone-ornament" size={16} aria-hidden="true" />
-      <button className="tombstone-title" type="button" onClick={() => onSelect(makam)} aria-label={`Buka detail ${makam.judul}`}><span>{makam.judul}</span></button>
+      <button className="tombstone-title" type="button" onClick={() => onSelect(makam)} aria-label={`Buka detail ${makam.judul}`}><span data-truncate="true">{makam.judul}</span></button>
       <div className="tombstone-life"><p>{formatTanggal(makam.tanggalMulai)} — {formatTanggal(makam.tanggalMenyerah)}</p><p>Hidup {getLabelDurasi(durasi)}</p></div>
       <div className="tombstone-divider" />
-      <div className="tombstone-copy"><p className="tombstone-label">Penyebab gugur</p><p className="tombstone-cause">{makam.penyebab}</p><p className="tombstone-epitaph">{makam.epitaph ? `“${makam.epitaph}”` : ""}</p></div>
+      <div className="tombstone-copy"><p className="tombstone-label">Penyebab gugur</p><p className="tombstone-cause" data-truncate="true">{makam.penyebab}</p><p className="tombstone-epitaph" data-truncate="true">{makam.epitaph ? `“${makam.epitaph}”` : ""}</p></div>
       <div className="tombstone-actions">
         <Tooltip label={flowerStatus === "done" ? `Bisa menabur lagi dalam ${flowerCountdown ?? "..."}` : "Tabur bunga"}>
           <Button size="sm" variant="secondary" disabled={flowerStatus === "done"} onClick={handleFlower} aria-label={flowerStatus === "login" ? "Masuk untuk menabur bunga" : `Tabur bunga untuk ${makam.judul}`}><>{flowerStatus === "done" ? <Check size={15} aria-hidden="true" /> : <Flower2 size={15} aria-hidden="true" />}<span>{flowerStatus === "done" ? "Besok lagi" : `Tabur bunga · ${makam.bunga}`}</span></></Button>

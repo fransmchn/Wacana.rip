@@ -2,14 +2,14 @@
 
 import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 
-interface DropdownMenuProps { trigger: ReactNode; label?: string; children: ReactNode; align?: "start" | "end"; }
+interface DropdownMenuProps { trigger: ReactNode; label?: string; children: ReactNode; align?: "start" | "end"; defaultOpen?: boolean; }
 interface DropdownItemProps { children: ReactNode; icon?: ReactNode; danger?: boolean; onSelect?: () => void; disabled?: boolean; }
 interface DropdownContextValue { close: () => void; }
 
 const DropdownContext = createContext<DropdownContextValue | null>(null);
 
-export function DropdownMenu({ trigger, label = "Menu", children, align = "end" }: DropdownMenuProps) {
-  const [open, setOpen] = useState(false);
+export function DropdownMenu({ trigger, label = "Menu", children, align = "end", defaultOpen = false }: DropdownMenuProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const [placement, setPlacement] = useState<"down" | "up">("down");
   const [resolvedAlign, setResolvedAlign] = useState(align);
   const rootRef = useRef<HTMLDivElement>(null);

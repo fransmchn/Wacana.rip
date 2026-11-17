@@ -19,10 +19,10 @@ import type { User } from "@supabase/supabase-js";
 
 const PRESETS = ["hantu", "lilin", "bunga", "tengkorak", "nisan", "kelelawar"];
 type ProfilePatch = { display_name: string; username: string | null; bio: string | null; avatar_url: string | null };
-interface ProfileModalProps { user: User; profile: ProfileRecord | null; onClose: () => void; onSave: (patch: ProfilePatch) => Promise<void>; onLogout: () => void; }
+interface ProfileModalProps { user: User; profile: ProfileRecord | null; onClose: () => void; onSave: (patch: ProfilePatch) => Promise<void>; onLogout: () => void; profileApi?: { getStats: () => Promise<ProfileStats>; checkUsername: (username: string, uid: string) => Promise<boolean>; } }
 interface CropOffset { x: number; y: number; }
 
-export function ProfileModal({ user, profile, onClose, onSave, onLogout }: ProfileModalProps) {
+export function ProfileModal({ user, profile, onClose, onSave, onLogout, profileApi }: ProfileModalProps) {
   const { toast } = useToast();
   const current = getProfileDisplay(user, profile);
   const [name, setName] = useState(current.name);
@@ -49,16 +49,16 @@ export function ProfileModal({ user, profile, onClose, onSave, onLogout }: Profi
   const avatar = resolveAvatar(avatarUrl, profile?.updated_at);
   const provider = user.app_metadata.provider ?? user.identities?.[0]?.provider;
 
-  useEffect(() => { void getMyStats().then(setStats).catch(() => setStats(null)).finally(() => setStatsLoading(false)); }, []);
+  useEffect(() => { void (profileApi ? profileApi.getStats() : getMyStats()).then(setStats).catch(() => setStats(null)).finally(() => setStatsLoading(false)); }, [profileApi]);
   useEffect(() => {
     const value = normalizeUsername(username);
     if (value !== username) { setUsername(value); return; }
     setUsernameAvailable(null);
     if (!value || validation.username) { setCheckingUsername(false); return; }
     setCheckingUsername(true);
-    const timer = window.setTimeout(() => { void checkUsernameAvailable(value, user.id).then(setUsernameAvailable).catch(() => setUsernameAvailable(null)).finally(() => setCheckingUsername(false)); }, 400);
+    const timer = window.setTimeout(() => { void (profileApi ? profileApi.checkUsername(value, user.id) : checkUsernameAvailable(value, user.id)).then(setUsernameAvailable).catch(() => setUsernameAvailable(null)).finally(() => setCheckingUsername(false)); }, 400);
     return () => window.clearTimeout(timer);
-  }, [username, user.id, validation.username]);
+  }, [profileApi, username, user.id, validation.username]);
   useEffect(() => () => { if (cropSource) URL.revokeObjectURL(cropSource); }, [cropSource]);
 
   function closeRequest() { if (dirty) setConfirmClose(true); else onClose(); }
@@ -119,8 +119,8 @@ export function ProfileModal({ user, profile, onClose, onSave, onLogout }: Profi
   return <Dialog open title="Edit profil" onClose={closeRequest} className="profile-dialog" footer={<><Button type="button" variant="secondary" onClick={closeRequest}>Batal</Button><Button type="submit" form="profile-form" loading={saving} disabled={!dirty || Object.keys(validation).length > 0 || usernameAvailable === false}>Simpan perubahan</Button></>}><form id="profile-form" className="profile-form" onSubmit={submit}>
     <div className="profile-avatar-section"><Avatar name={current.name} src={avatar.type === "image" ? avatar.url : avatar.type === "preset" ? `preset:${avatar.key}` : null} tone={current.avatarTone} size="lg" /><Button type="button" variant="secondary" size="sm" aria-expanded={showAvatarPanel} onClick={() => setShowAvatarPanel((value) => !value)}><ImagePlus size={15} />Ganti foto<ChevronDown size={15} aria-hidden="true" /></Button></div>
     {showAvatarPanel && <div className="profile-avatar-panel"><div><h3 className="profile-upload-heading">Unggah foto</h3><div className="profile-upload-actions"><Button type="button" variant="secondary" size="sm" onClick={() => fileRef.current?.click()}><Upload size={15} />Upload</Button><input ref={fileRef} hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) selectFile(file); event.currentTarget.value = ""; }} /><Button type="button" variant="ghost" size="sm" className="ui-button-danger" onClick={() => setAvatarUrl(null)}><Trash2 size={15} />Hapus foto</Button></div></div><div className="profile-upload-separator">atau pilih avatar</div>{cropImage && <div className="profile-crop"><div className="profile-crop-preview" onPointerDown={(event) => { cropDragRef.current = { active: true, x: event.clientX, y: event.clientY, offset: cropOffset }; event.currentTarget.setPointerCapture(event.pointerId); }} onPointerMove={moveCrop} onPointerUp={() => { cropDragRef.current.active = false; }} onPointerCancel={() => { cropDragRef.current.active = false; }}><img src={cropSource ?? ""} alt="Pratinjau foto profil" style={{ transform: `translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropZoom})` }} /></div><label className="ui-field"><span className="ui-field-label">Perbesar</span><input type="range" min="1" max="3" step=".05" value={cropZoom} onChange={(event) => { const nextZoom = Number(event.target.value); setCropZoom(nextZoom); setCropOffset(clampOffset(cropOffset, cropImage, nextZoom)); }} /></label><Button type="button" size="sm" onClick={() => void commitCrop()}>Pakai foto</Button></div>}<div className="profile-presets">{PRESETS.map((preset) => <Tooltip key={preset} label={preset}><button type="button" className="profile-preset-button" aria-label={preset} aria-pressed={avatarUrl === `preset:${preset}`} onClick={() => setAvatarUrl(`preset:${preset}`)}><Avatar name={preset} src={`preset:${preset}`} size="sm" />{avatarUrl === `preset:${preset}` && <span className="profile-preset-check"><Check size={11} strokeWidth={3} aria-hidden="true" /></span>}</button></Tooltip>)}</div><p className="ui-field-help">JPG, PNG, atau WebP. Maksimal 2 MB.</p></div>}
-    <Input data-autofocus required label="Nama tampilan" id="profile-name" value={name} maxLength={32} onChange={(event) => setName(event.target.value)} error={fieldErrors.display_name ?? validation.displayName} trailing={<span className="profile-counter">{name.length}/32</span>} />
-    <Input label="Username" id="profile-username" value={username} maxLength={20} onChange={(event) => setUsername(event.target.value)} error={fieldErrors.username ?? validation.username} leading={<span>@</span>} helperText={checkingUsername ? "Memeriksa..." : username && !validation.username ? usernameAvailable === true ? "Username tersedia." : usernameAvailable === false ? "Username sudah dipakai." : undefined : undefined} />
+    <Input data-autofocus required label="Nama tampilan" id="profile-name" value={name} maxLength={32} onChange={(event) => setName(event.target.value)} error={fieldErrors.display_name ?? validation.displayName} counter={`${name.length}/32`} />
+    <Input label="Username" id="profile-username" value={username} maxLength={20} onChange={(event) => setUsername(event.target.value)} error={fieldErrors.username ?? validation.username} leading={<span>@</span>} placeholder="contoh: frans_chan" helperText={checkingUsername ? "Memeriksa..." : username && !validation.username ? usernameAvailable === true ? "Username tersedia." : usernameAvailable === false ? "Username sudah dipakai." : undefined : "3-20 karakter: huruf kecil, angka, underscore"} />
     <Textarea label="Epitaf pribadi" id="profile-bio" value={bio} maxLength={120} onChange={(event) => setBio(event.target.value)} error={fieldErrors.bio ?? validation.bio} placeholder="Tulis epitaf untuk dirimu sendiri" helperText={`${bio.length}/120`} />
     <Input label="Email" value={user.email ?? ""} disabled trailing={<Badge tone="neutral">{provider === "google" ? "Google" : "Magic link"}</Badge>} />
     {(statsLoading || stats) && <div className="profile-stats"><h3>Statistik peziarah</h3>{statsLoading ? <div className="profile-stats-grid"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div> : stats && <div className="profile-stats-grid"><Stat label="Wacana dikubur" value={stats.wacanaDikubur} /><Stat label="Bunga ditabur" value={stats.bungaDitabur} /><Stat label="Lilin dinyalakan" value={stats.lilinDinyalakan} /></div>}</div>}

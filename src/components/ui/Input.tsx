@@ -6,9 +6,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   leading?: ReactNode;
   trailing?: ReactNode;
+  counter?: string;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ label, id, helperText, error, leading, trailing, className = "", ...props }, ref) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ label, id, helperText, error, leading, trailing, counter, className = "", ...props }, ref) {
   const feedbackId = id ? `${id}-feedback` : undefined;
   const describedBy = props["aria-describedby"] ?? (feedbackId && (error || helperText) ? feedbackId : undefined);
   return <label className="ui-field">
@@ -16,8 +17,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input({ l
     <span className="ui-control-wrap">
       {leading && <span className="ui-control-leading" aria-hidden="true">{leading}</span>}
       <input {...props} ref={ref} id={id} aria-describedby={describedBy} aria-invalid={Boolean(error)} className={`ui-input ${leading ? "ui-input-leading" : ""} ${trailing ? "ui-input-trailing" : ""} ${className}`} />
-      {trailing && <span className="ui-control-trailing">{trailing}</span>}
+      {trailing && !counter && <span className="ui-control-trailing">{trailing}</span>}
     </span>
+    {counter && <span className="ui-counter ui-counter-below">{counter}</span>}
     {(error || helperText) && <span id={feedbackId} className={`ui-field-help ${error ? "ui-field-error" : ""}`}>{error ?? helperText}</span>}
   </label>;
 });

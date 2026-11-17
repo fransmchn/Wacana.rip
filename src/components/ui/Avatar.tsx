@@ -1,9 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 
+import { initialsFor } from "@/lib/profile";
+
 interface AvatarProps { name?: string; initials?: string; src?: string | null; size?: "sm" | "md" | "lg"; tone?: "rose" | "gold" | "sage" | "slate"; }
 
 export function Avatar({ name = "Anonim", initials: providedInitials, src, size = "md", tone = "gold" }: AvatarProps) {
-  const initials = providedInitials || name.trim().slice(0, 2).toUpperCase() || "A";
+  const initials = providedInitials || initialsFor(name);
   const preset = src?.startsWith("preset:") ? src.slice("preset:".length) : null;
   return <span className={`ui-avatar ui-avatar-${size} ${!src ? `ui-avatar-initials ui-avatar-tone-${tone}` : ""}`} aria-label={`Avatar ${name}`}>{preset ? <PresetAvatar preset={preset} /> : src ? <img src={src} alt="" loading={size === "lg" ? "eager" : "lazy"} decoding="async" width={size === "lg" ? 80 : size === "md" ? 40 : 32} height={size === "lg" ? 80 : size === "md" ? 40 : 32} /> : initials}</span>;
 }
