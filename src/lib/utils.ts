@@ -36,6 +36,14 @@ export function formatRupiah(value: number): string {
   }).format(value);
 }
 
+export function formatCompactRupiah(value: number): string {
+  const absolute = Math.abs(value);
+  if (absolute >= 1_000_000_000) return `Rp ${(value / 1_000_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`;
+  if (absolute >= 1_000_000) return `Rp ${(value / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} jt`;
+  if (absolute >= 1_000) return `Rp ${(value / 1_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} rb`;
+  return formatRupiah(value);
+}
+
 export function formatKerugian(makam: Pick<Makam, "kerugianRupiah" | "kerugianJam">): string {
   const values: string[] = [];
   if (makam.kerugianRupiah) values.push(formatRupiah(makam.kerugianRupiah));

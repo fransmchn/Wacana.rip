@@ -1,41 +1,35 @@
-import { ArrowDown, Pencil, Plus } from "lucide-react";
+"use client";
+
+import { LogOut, Pencil, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { DropdownItem, DropdownLabel, DropdownMenu, DropdownSeparator } from "@/components/ui/DropdownMenu";
+import { IconButton } from "@/components/ui/IconButton";
+import type { ProfileDisplay } from "@/lib/profile";
 
 interface HeaderProps {
   onBury: () => void;
-  userName?: string;
+  profile?: ProfileDisplay;
   onLogin: () => void;
   onEditProfile: () => void;
   onLogout: () => void;
+  ctaVisible?: boolean;
 }
 
-export function Header({ onBury, userName, onLogin, onEditProfile, onLogout }: HeaderProps) {
-  return (
-    <header className="container-shell flex items-start justify-between gap-4 py-5 sm:gap-6 sm:py-8">
-      <div className="min-w-0">
-        <a href="#top" className="inline-flex items-center gap-2 text-sm font-semibold tracking-[.18em] text-[#f4f1e9] no-underline">
-          <span className="grid h-7 w-7 place-items-center rounded-full border border-[#d87078]/70 text-[#f08c91]" aria-hidden="true">✦</span>
-          WACANA.RIP
-        </a>
-        <p className="mt-2 max-w-[250px] text-xs leading-5 text-[#a7a69f] sm:mt-3 sm:max-w-md sm:text-sm sm:leading-6">
-          Tempat peristirahatan terakhir bagi wacana yang tak pernah terjadi.
-        </p>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {userName ? <><button onClick={onEditProfile} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#ffffff1a] px-3 text-xs text-[#a7a69f] hover:border-[#ffffff35] hover:bg-[#ffffff08] hover:text-[#f4f1e9]" title="Edit profil"><Pencil size={14} aria-hidden="true" /><span className="hidden sm:inline">Edit profil</span></button><button onClick={onLogout} className="min-h-11 max-w-32 truncate rounded-full border border-[#ffffff1a] px-3 text-xs text-[#a7a69f] hover:border-[#ffffff35] hover:text-[#f4f1e9]" title="Keluar">{userName} · Keluar</button></> : <button onClick={onLogin} className="min-h-11 rounded-full border border-[#ffffff1a] px-3 text-sm text-[#a7a69f] hover:border-[#ffffff35] hover:text-[#f4f1e9] sm:px-4">Masuk</button>}
-        <button onClick={onBury} className="group inline-flex min-h-11 items-center gap-2 rounded-full border border-[#d87078]/70 bg-[#d87078] px-4 py-2.5 text-sm font-semibold text-[#1c1114] transition hover:-translate-y-0.5 hover:bg-[#f08c91]">
-          <Plus size={16} strokeWidth={2.5} aria-hidden="true" />
-          <span className="hidden md:inline">Kuburkan Wacana</span>
-          <span className="md:hidden">Kuburkan</span>
-        </button>
-      </div>
-    </header>
-  );
-}
-
-export function ScrollCue() {
-  return (
-    <a href="#pemakaman" className="mt-8 inline-flex items-center gap-2 text-xs text-[#a7a69f] transition hover:text-[#f4f1e9]">
-      Lihat pemakaman <ArrowDown size={14} aria-hidden="true" />
-    </a>
-  );
+export function Header({ onBury, profile, onLogin, onEditProfile, onLogout, ctaVisible = false }: HeaderProps) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 8); window.addEventListener("scroll", onScroll, { passive: true }); onScroll(); return () => window.removeEventListener("scroll", onScroll); }, []);
+  return <header className={`site-header ${scrolled ? "site-header-scrolled" : ""}`}><div className="container-shell site-header-inner">
+    <a href="#top" className="brand-mark"><span className="brand-symbol" aria-hidden="true">✦</span><span>WACANA.RIP</span></a>
+    <div className="site-header-actions">
+      {!profile && <Button variant="secondary" size="md" onClick={onLogin}>Masuk</Button>}
+      <Button className={`header-cta-desktop ${ctaVisible ? "header-cta-hidden" : ""}`} size="md" onClick={onBury}><Plus size={16} strokeWidth={2.5} aria-hidden="true" />Kuburkan Wacana</Button>
+      <IconButton className="header-cta-mobile" variant="primary" size="md" label="Kuburkan wacana" onClick={onBury}><Plus size={18} strokeWidth={2.5} aria-hidden="true" /></IconButton>
+      {profile && <DropdownMenu label="Menu profil" trigger={<Avatar name={profile.name} src={profile.avatarUrl} size="md" />}>
+        <DropdownLabel><span className="ui-profile-menu-head"><Avatar name={profile.name} src={profile.avatarUrl} size="md" /><span><strong>{profile.name}</strong><small>{profile.email}</small></span></span></DropdownLabel>
+        <DropdownSeparator /><DropdownItem icon={<Pencil size={16} />} onSelect={onEditProfile}>Edit profil</DropdownItem><DropdownItem icon={<LogOut size={16} />} danger onSelect={onLogout}>Keluar</DropdownItem>
+      </DropdownMenu>}
+    </div>
+  </div></header>;
 }

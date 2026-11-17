@@ -1,26 +1,31 @@
+"use client";
+
 import { Clock3, Flower2, Landmark, WalletCards } from "lucide-react";
+import { motion, useInView, useReducedMotion } from "framer-motion";
+import { useRef } from "react";
 import type { Statistik } from "@/types/graveyard";
-import { formatRupiah } from "@/lib/utils";
+import { formatCompactRupiah } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface StatsBannerProps { statistik: Statistik; }
 
 export function StatsBanner({ statistik }: StatsBannerProps) {
+  const ref = useRef<HTMLElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  const reducedMotion = useReducedMotion();
   const items = [
-    { label: "Wacana terkubur", value: statistik.totalMakam.toLocaleString("id-ID"), icon: Landmark },
-    { label: "Bunga ditaburkan", value: statistik.totalBunga.toLocaleString("id-ID"), icon: Flower2 },
-    { label: "Kerugian tercatat", value: formatRupiah(statistik.totalRupiah), icon: WalletCards },
-    { label: "Jam terbuang", value: `${statistik.totalJam.toLocaleString("id-ID")} jam`, icon: Clock3 },
+    { label: "Wacana terkubur", value: statistik.totalMakam, full: statistik.totalMakam.toLocaleString("id-ID"), icon: Landmark, tone: "gold" },
+    { label: "Bunga ditaburkan", value: statistik.totalBunga, full: statistik.totalBunga.toLocaleString("id-ID"), icon: Flower2, tone: "rose" },
+    { label: "Kerugian tercatat", value: statistik.totalRupiah, full: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(statistik.totalRupiah), icon: WalletCards, tone: "gold", compact: true },
+    { label: "Jam terbuang", value: statistik.totalJam, full: `${statistik.totalJam.toLocaleString("id-ID")} jam`, icon: Clock3, tone: "rose", suffix: " jam" },
   ];
+  return <section ref={ref} aria-label="Statistik pemakaman" className="panel stats-grid"><h2 className="sr-only">Statistik TPU Wacana</h2>{items.map(({ label, value, full, icon: Icon, tone, compact, suffix }) => <div key={label} className="stat-card"><span className={`stat-icon stat-icon-${tone}`}><Icon size={18} aria-hidden="true" /></span><Tooltip label={full}><span className="stat-value-wrap"><AnimatedNumber value={value} compact={compact} suffix={suffix} active={inView && !reducedMotion} /><span className="sr-only">{full}</span></span></Tooltip><p className="stat-label">{label}</p></div>)}</section>;
+}
 
-  return (
-    <section aria-label="Statistik pemakaman" className="panel grid grid-cols-2 divide-x divide-y divide-[#ffffff12] rounded-2xl sm:grid-cols-4 sm:divide-y-0">
-      {items.map(({ label, value, icon: Icon }) => (
-        <div key={label} className="stat-card min-w-0 px-4 py-5 sm:px-5">
-          <Icon size={17} className="mb-4 text-[#d8ad69]" aria-hidden="true" />
-          <p className="truncate text-lg font-semibold tracking-[-.02em] text-[#f4f1e9] sm:text-xl">{value}</p>
-          <p className="mt-1 text-[11px] leading-4 text-[#a7a69f] sm:text-xs">{label}</p>
-        </div>
-      ))}
-    </section>
-  );
+function AnimatedNumber({ value, compact = false, suffix = "", active }: { value: number; compact?: boolean; suffix?: string; active: boolean }) {
+  return <motion.span aria-hidden="true" className="stat-value" initial={{ opacity: 0 }} animate={{ opacity: active ? 1 : 0 }} transition={{ duration: .25 }}>{active ? <CountText value={value} compact={compact} suffix={suffix} /> : "0"}</motion.span>;
+}
+
+function CountText({ value, compact, suffix }: { value: number; compact: boolean; suffix: string }) {
+  return <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2, ease: "easeOut" }}>{compact ? formatCompactRupiah(value) : `${value.toLocaleString("id-ID")}${suffix}`}</motion.span>;
 }
