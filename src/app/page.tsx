@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginModal } from "@/components/LoginModal";
 import { ProfileModal } from "@/components/ProfileModal";
@@ -36,7 +36,7 @@ export default function Home() {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const heroCtaRef = useRef<HTMLButtonElement>(null);
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
-  useEffect(() => { if (!heroCtaRef.current || !("IntersectionObserver" in window)) return; const observer = new IntersectionObserver(([entry]) => setHeroCtaVisible(entry.isIntersecting), { threshold: .1 }); observer.observe(heroCtaRef.current); return () => observer.disconnect(); }, []);
+  useEffect(() => { if (!heroCtaRef.current || !("IntersectionObserver" in window)) { setHeroCtaVisible(false); return; } const observer = new IntersectionObserver(([entry]) => setHeroCtaVisible(entry.isIntersecting), { threshold: .1 }); observer.observe(heroCtaRef.current); return () => observer.disconnect(); }, []);
   const requireLogin = (action: () => void) => { if (!user) { setLoginOpen(true); return; } action(); };
   const filtered = useMemo(() => makam
     .filter((item) => category === "semua" || item.kategori === category)
@@ -60,16 +60,16 @@ export default function Home() {
       {!configured && <div className="container-shell mt-2"><p role="status" className="status-banner">{process.env.NODE_ENV === "production" ? "Supabase belum dikonfigurasi. Isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY." : "Mode lokal aktif untuk development. Login dan aksi tersimpan server menunggu konfigurasi Supabase."}</p></div>}
       <section className="container-shell pb-12 pt-8 sm:pb-20 sm:pt-12">
         <div className="hero-wrap hero-layout px-5 py-8 sm:px-10 sm:py-12">
-          <HeroIllustration />
           <div className="hero-copy max-w-3xl">
             <p className="eyebrow">T P U · W A C A N A</p>
             <h1 className="mt-4 max-w-2xl text-display font-semibold tracking-[-.02em] text-[var(--text)]">Di sini, kegagalan punya tempat untuk pulang.</h1>
             <p className="mt-5 max-w-xl text-body text-[var(--text-muted)]">Tempat peristirahatan terakhir bagi wacana yang tak pernah terjadi. Tidak semua yang gagal harus dilupakan.</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button ref={heroCtaRef} size="lg" onClick={() => requireLogin(() => setBuryOpen(true))}>+ Kuburkan wacana</Button>
+              <Button ref={heroCtaRef} size="lg" onClick={() => requireLogin(() => setBuryOpen(true))}><Plus size={18} strokeWidth={2.5} aria-hidden="true" />Kuburkan wacana</Button>
               <Button size="lg" variant="secondary" onClick={() => document.getElementById("pemakaman")?.scrollIntoView({ behavior: "smooth" })}><ArrowDown size={18} aria-hidden="true" />Lihat pemakaman</Button>
             </div>
           </div>
+          <HeroIllustration />
         </div>
       </section>
       <section className="container-shell" aria-labelledby="stats-title">

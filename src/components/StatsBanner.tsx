@@ -1,8 +1,8 @@
 "use client";
 
 import { Clock3, Flower2, Landmark, WalletCards } from "lucide-react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
-import { useRef } from "react";
+import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
+import { useEffect, useRef } from "react";
 import type { Statistik } from "@/types/graveyard";
 import { formatCompactRupiah } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/Tooltip";
@@ -19,13 +19,23 @@ export function StatsBanner({ statistik }: StatsBannerProps) {
     { label: "Kerugian tercatat", value: statistik.totalRupiah, full: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(statistik.totalRupiah), icon: WalletCards, tone: "gold", compact: true },
     { label: "Jam terbuang", value: statistik.totalJam, full: `${statistik.totalJam.toLocaleString("id-ID")} jam`, icon: Clock3, tone: "rose", suffix: " jam" },
   ];
-  return <section ref={ref} aria-label="Statistik pemakaman" className="panel stats-grid"><h2 className="sr-only">Statistik TPU Wacana</h2>{items.map(({ label, value, full, icon: Icon, tone, compact, suffix }) => <div key={label} className="stat-card"><span className={`stat-icon stat-icon-${tone}`}><Icon size={18} aria-hidden="true" /></span><Tooltip label={full}><span className="stat-value-wrap"><AnimatedNumber value={value} compact={compact} suffix={suffix} active={inView && !reducedMotion} /><span className="sr-only">{full}</span></span></Tooltip><p className="stat-label">{label}</p></div>)}</section>;
+
+  return <section ref={ref} aria-label="Statistik pemakaman" className="panel stats-grid"><h2 className="sr-only">Statistik TPU Wacana</h2>{items.map(({ label, value, full, icon: Icon, tone, compact, suffix }) => <div key={label} className="stat-card"><span className={`stat-icon stat-icon-${tone}`}><Icon size={18} aria-hidden="true" /></span><Tooltip label={full}><span className="stat-value-wrap" tabIndex={0} aria-label={full}><AnimatedNumber value={value} compact={compact} suffix={suffix} inView={inView} reducedMotion={reducedMotion} /><span className="sr-only">{full}</span></span></Tooltip><p className="stat-label">{label}</p></div>)}</section>;
 }
 
-function AnimatedNumber({ value, compact = false, suffix = "", active }: { value: number; compact?: boolean; suffix?: string; active: boolean }) {
-  return <motion.span aria-hidden="true" className="stat-value" initial={{ opacity: 0 }} animate={{ opacity: active ? 1 : 0 }} transition={{ duration: .25 }}>{active ? <CountText value={value} compact={compact} suffix={suffix} /> : "0"}</motion.span>;
-}
+function AnimatedNumber({ value, compact = false, suffix = "", inView, reducedMotion }: { value: number; compact?: boolean; suffix?: string; inView: boolean; reducedMotion: boolean | null }) {
+  const count = useMotionValue(0);
+  const displayed = useTransform(count, (current) => compact ? formatCompactRupiah(current) : `${Math.round(current).toLocaleString("id-ID")}${suffix}`);
 
-function CountText({ value, compact, suffix }: { value: number; compact: boolean; suffix: string }) {
-  return <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2, ease: "easeOut" }}>{compact ? formatCompactRupiah(value) : `${value.toLocaleString("id-ID")}${suffix}`}</motion.span>;
+  useEffect(() => {
+    if (reducedMotion) {
+      count.set(value);
+      return;
+    }
+    if (!inView) return;
+    const controls = animate(count, value, { duration: 1.2, ease: "easeOut" });
+    return () => controls.stop();
+  }, [count, inView, reducedMotion, value]);
+
+  return <motion.span aria-hidden="true" className="stat-value">{displayed}</motion.span>;
 }
