@@ -3,7 +3,6 @@ import type { ProfileRecord } from "@/lib/profile";
 import { normalizeUsername } from "@/lib/profileValidation";
 
 export interface ProfilePatch { display_name?: string; username?: string | null; bio?: string | null; avatar_url?: string | null; }
-export interface ProfilePreferences { user_id: string; anonymous_default: boolean; updated_at?: string | null; }
 export interface ProfileStats { wacanaDikubur: number; bungaDitabur: number; lilinDinyalakan: number; }
 
 function client() {
@@ -62,18 +61,6 @@ export async function removeAvatar(uid: string, oldUrl: string | null | undefine
   if (!path.startsWith(`${uid}/`)) return;
   const result = await client().storage.from("avatars").remove([path]);
   if (result.error) throw friendlyError(result.error, "Foto profil lama gagal dihapus.");
-}
-
-export async function getPreferences(uid: string): Promise<ProfilePreferences | null> {
-  const result = await client().from("profile_preferences").select("*").eq("user_id", uid).maybeSingle();
-  if (result.error) throw friendlyError(result.error, "Preferensi profil gagal dimuat.");
-  return result.data as ProfilePreferences | null;
-}
-
-export async function updatePreferences(uid: string, anonymousDefault: boolean): Promise<ProfilePreferences> {
-  const result = await client().from("profile_preferences").upsert({ user_id: uid, anonymous_default: anonymousDefault }).select("*").single();
-  if (result.error || !result.data) throw friendlyError(result.error, "Preferensi profil gagal disimpan.");
-  return result.data as ProfilePreferences;
 }
 
 export async function getMyStats(): Promise<ProfileStats> {
