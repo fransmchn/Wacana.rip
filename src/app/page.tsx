@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginModal } from "@/components/LoginModal";
+import { ProfileModal } from "@/components/ProfileModal";
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { BuryModal } from "@/components/BuryModal";
 import { DeathCertificateModal } from "@/components/DeathCertificateModal";
@@ -18,8 +19,9 @@ import { useWibCountdown } from "@/components/useWibCountdown";
 
 export default function Home() {
   const { makam, statistik, loading, error, bunga, lilin, komentar, kuburkan, bungaStatus, lilinSaya, refreshPersonalStatus } = useGraveyard();
-  const { user, configured, signOut } = useAuth();
+  const { user, configured, updateProfile, signOut } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [category, setCategory] = useState<"semua" | Kategori>("semua");
   const [sort, setSort] = useState<SortKey>("terbaru");
   const [search, setSearch] = useState("");
@@ -46,7 +48,7 @@ export default function Home() {
   return (
     <main id="top" className="relative min-h-screen overflow-hidden pb-20">
       <AmbientBackground />
-      <Header onBury={() => requireLogin(() => setBuryOpen(true))} userName={user?.user_metadata.full_name ?? user?.email ?? undefined} onLogin={() => setLoginOpen(true)} onLogout={() => void signOut()} />
+      <Header onBury={() => requireLogin(() => setBuryOpen(true))} userName={user?.user_metadata.full_name ?? user?.email ?? undefined} onLogin={() => setLoginOpen(true)} onEditProfile={() => setProfileOpen(true)} onLogout={() => void signOut()} />
       {!configured && <div className="container-shell mt-2"><p role="status" className="rounded-xl border border-[#d8ad69]/30 bg-[#d8ad69]/10 px-4 py-3 text-sm text-[#d8ad69]">{process.env.NODE_ENV === "production" ? "Supabase belum dikonfigurasi. Isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY." : "Mode lokal aktif untuk development. Login dan aksi tersimpan server menunggu konfigurasi Supabase."}</p></div>}
       <section className="container-shell pb-12 pt-8 sm:pb-20 sm:pt-12">
         <div className="hero-wrap px-5 py-8 sm:px-10 sm:py-12">
@@ -66,7 +68,7 @@ export default function Home() {
         <StatsBanner statistik={statistik} />
       </section>
       <section id="pemakaman" className="container-shell pt-16 sm:pt-24" aria-labelledby="graveyard-title">
-        <div className="mb-8 flex items-end justify-between gap-4">
+        <div className="section-heading mb-8">
           <div>
             <p className="eyebrow">Koleksi kenangan</p>
             <h2 id="graveyard-title" className="mt-2 text-2xl font-semibold tracking-[-.03em] sm:text-3xl">Makam terbaru</h2>
@@ -83,6 +85,7 @@ export default function Home() {
       {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={(newMakam) => { setBuryOpen(false); setHighlightedId(newMakam.id); window.setTimeout(() => setHighlightedId(null), 1900); window.setTimeout(() => setCertificate(newMakam), 900); }} />}
       {certificate && <DeathCertificateModal makam={certificate} onClose={() => setCertificate(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+      {profileOpen && user && <ProfileModal initialName={user.user_metadata.full_name ?? ""} onClose={() => setProfileOpen(false)} onSave={updateProfile} />}
     </main>
   );
 }

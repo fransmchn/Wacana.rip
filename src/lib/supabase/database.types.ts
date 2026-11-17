@@ -10,7 +10,7 @@ type Table<Row, Insert = Row, Update = Partial<Insert>> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<{ id: string; display_name: string; created_at: string }>;
+      profiles: Table<{ id: string; display_name: string; created_at: string }, { id?: string; display_name?: string; created_at?: string }, { display_name?: string }>;
       makam: Table<{
         id: string;
         user_id: string | null;
@@ -44,6 +44,6 @@ export type Database = {
       toggle_lilin: { Args: { target_makam_id: string }; Returns: { ok: boolean; code?: string; enabled?: boolean; lilin_count?: number } };
     };
     CompositeTypes: never;
-    Enums: { kategori: "skripsi" | "koding" | "desain" | "bisnis" | "resolusi" };
+    Enums: { kategori: "skripsi" | "koding" | "desain" | "bisnis" | "resolusi" | "hubungan" | "pribadi" | "pekerjaan" | "keluarga" | "kesehatan" | "perjalanan" | "lainnya" };
   };
 };

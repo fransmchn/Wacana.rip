@@ -2,7 +2,7 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users on delete cascade,
-  display_name text not null default 'Anonim' check (char_length(display_name) <= 30),
+  display_name text not null default 'Anonim' check (char_length(display_name) between 1 and 30),
   created_at timestamptz not null default now()
 );
 

@@ -39,11 +39,23 @@ export function useAuth() {
     };
   }, []);
 
+  async function updateProfile(displayName: string): Promise<void> {
+    const name = displayName.trim().slice(0, 30);
+    if (!name) throw new Error("Nama profil wajib diisi.");
+    const client = createSupabaseBrowserClient();
+    if (!client || !user) throw new Error("Masuk dulu untuk mengubah profil.");
+    const authResult = await client.auth.updateUser({ data: { full_name: name } });
+    if (authResult.error) throw new Error(`Profil gagal diperbarui: ${authResult.error.message}`);
+    const profileResult = await client.from("profiles").update({ display_name: name }).eq("id", user.id);
+    if (profileResult.error) throw new Error(`Profil gagal diperbarui: ${profileResult.error.message}`);
+    setUser(authResult.data.user ?? user);
+  }
+
   async function signOut(): Promise<void> {
     const client = createSupabaseBrowserClient();
     if (!client) return;
     await client.auth.signOut();
   }
 
-  return { user, loading, configured, signOut };
+  return { user, loading, configured, updateProfile, signOut };
 }
