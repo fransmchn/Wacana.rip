@@ -5,11 +5,14 @@
 .flower-petal { position: absolute; display: block; color: #f08c91; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
 .flower-burst-reduced { position: absolute; z-index: 2; top: 42%; left: 50%; color: #f08c91; font-size: 12px; font-weight: 600; pointer-events: none; transform: translateX(-50%); }
 .tombstone:hover { transform: translateY(-4px); }
-.tombstone-kayu { color: #ead4b0; border-color: #806043; background: linear-gradient(130deg, #4e362d, #2e211e 55%, #5c4430); box-shadow: inset 0 0 0 1px rgba(255,220,160,.06), 0 16px 35px rgba(0,0,0,.18); }
-.tombstone-kayu::after { content: ""; position: absolute; inset: 0; opacity: .14; pointer-events: none; background: repeating-linear-gradient(78deg, transparent 0 13px, #edc689 14px 15px, transparent 16px 29px); }
-.tombstone-granit { color: #d9d8d4; border-color: #66656d; background: radial-gradient(circle at 20% 20%, #72717a 0 1px, transparent 2px), radial-gradient(circle at 80% 70%, #5f6067 0 1px, transparent 2px), linear-gradient(145deg, #43434c, #222329); background-size: 23px 23px, 31px 31px, auto; box-shadow: inset 0 0 0 1px #ffffff0d, 0 16px 35px rgba(0,0,0,.25); }
-.tombstone-marmer { color: #353139; border-color: #c6bdba; background: linear-gradient(135deg, #d9d4d0, #a8a5a5); box-shadow: inset 0 0 0 1px #fff8, 0 16px 35px rgba(0,0,0,.25); }
-.tombstone-marmer::after { content: ""; position: absolute; inset: 0; opacity: .2; pointer-events: none; background: linear-gradient(125deg, transparent 15%, #69646a 16% 16.5%, transparent 17% 43%, #69646a 43.5% 44%, transparent 44.5% 70%, #69646a 70.5% 71%, transparent 71.5%); }
-.tombstone-cap { position: absolute; top: 0; left: 50%; width: 54%; height: 9px; transform: translateX(-50%); border-radius: 0 0 9px 9px; background: currentColor; opacity: .42; }
+.tombstone-kayu { --tomb-ink: #f4e7cf; --tomb-ink-muted: #e2cda8; --tomb-line: rgba(244,231,207,.3); color: var(--tomb-ink); border-color: #806043; background: linear-gradient(130deg, #4e362d, #2e211e 55%, #5c4430); box-shadow: inset 0 0 0 1px rgba(255,220,160,.06), 0 16px 35px rgba(0,0,0,.18); }
+.tombstone-kayu::after { content: ""; position: absolute; inset: 0; opacity: .07; pointer-events: none; background: repeating-linear-gradient(78deg, transparent 0 13px, #edc689 14px 15px, transparent 16px 29px); }
+.tombstone-granit { --tomb-ink: #f0efeb; --tomb-ink-muted: #d4d3d0; --tomb-line: rgba(240,239,235,.3); color: var(--tomb-ink); border-color: #66656d; background: radial-gradient(circle at 20% 20%, #72717a 0 1px, transparent 2px), radial-gradient(circle at 80% 70%, #5f6067 0 1px, transparent 2px), linear-gradient(145deg, #43434c, #222329); background-size: 23px 23px, 31px 31px, auto; box-shadow: inset 0 0 0 1px #ffffff0d, 0 16px 35px rgba(0,0,0,.25); }
+.tombstone-marmer { --tomb-ink: #262229; --tomb-ink-muted: #2f2a31; --tomb-line: rgba(38,34,41,.28); color: var(--tomb-ink); border-color: #c6bdba; background: linear-gradient(135deg, #d9d4d0, #a8a5a5); box-shadow: inset 0 0 0 1px #fff8, 0 16px 35px rgba(0,0,0,.25); }
+.tombstone-marmer::after { content: ""; position: absolute; inset: 0; opacity: .09; pointer-events: none; background: linear-gradient(125deg, transparent 15%, #69646a 16% 16.5%, transparent 17% 43%, #69646a 43.5% 44%, transparent 44.5% 70%, #69646a 70.5% 71%, transparent 71.5%); }
+.tombstone-cap { position: absolute; top: 0; left: 50%; width: 54%; height: 9px; transform: translateX(-50%); border-radius: 0 0 9px 9px; background: var(--tomb-ink-muted); opacity: .38; }
+.tombstone .opacity-60, .tombstone .opacity-70, .tombstone .opacity-75, .tombstone .opacity-80 { opacity: 1; color: var(--tomb-ink-muted); }
+.tombstone .border-current\/15 { border-color: var(--tomb-line); }
+.tombstone .border-current\/20 { border-color: var(--tomb-line); }
 .tombstone.is-lit { box-shadow: 0 0 26px rgba(235, 159, 82, .24), inset 0 0 0 1px #fff2; }
 .tombstone.is-lit::before { content: ""; position: absolute; top: 30px; left: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translateX(-50%); background: #ffb866; filter: blur(7px); opacity: .9; }
