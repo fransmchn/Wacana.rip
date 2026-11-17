@@ -1,16 +1,53 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Flame, MessageCircle, X } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { Flame, Flower2, MessageCircle } from "lucide-react";
 import { FlowerBurst } from "@/components/FlowerBurst";
+import { Dialog } from "@/components/ui/Dialog";
+import { Badge } from "@/components/ui/Badge";
+import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { Tooltip } from "@/components/ui/Tooltip";
+import { useToast } from "@/components/ui/Toast";
 import type { KomentarInput, Makam } from "@/types/graveyard";
 import { formatKerugian, formatTanggal, getDurasiHari, getLabelDurasi } from "@/lib/utils";
 
+const categoryLabel: Record<Makam["kategori"], string> = { skripsi: "Skripsi", koding: "Koding", desain: "Desain", bisnis: "Bisnis", resolusi: "Resolusi", hubungan: "Hubungan", pribadi: "Pribadi", pekerjaan: "Pekerjaan", keluarga: "Keluarga", kesehatan: "Kesehatan", perjalanan: "Perjalanan", lainnya: "Lainnya" };
 interface GraveDetailModalProps { makam: Makam; onClose: () => void; onFlower: (id: string) => void; onCandle: (id: string) => void; onComment: (id: string, input: KomentarInput) => Promise<void>; flowerStatus: "active" | "done" | "login"; flowerCountdown?: string; candleMine: boolean; }
 
 export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment, flowerStatus, flowerCountdown, candleMine }: GraveDetailModalProps) {
-  const [input, setInput] = useState<KomentarInput>({ nama: "", isi: "" }); const [error, setError] = useState(""); const [saving, setSaving] = useState(false); const [flowerBurst, setFlowerBurst] = useState(false);
-  useEffect(() => { const handler = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); }; document.addEventListener("keydown", handler); return () => document.removeEventListener("keydown", handler); }, [onClose]);
-  async function submit(event: React.FormEvent) { event.preventDefault(); setError(""); setSaving(true); try { await onComment(makam.id, input); setInput({ nama: "", isi: "" }); } catch (reason) { setError(reason instanceof Error ? reason.message : "Doa gagal ditinggalkan."); } finally { setSaving(false); } }
-  return <div role="dialog" aria-modal="true" aria-labelledby="grave-detail-title" className="fixed inset-0 z-20 grid place-items-center bg-black/75 p-4" onClick={onClose}><div className="panel modal-surface max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl p-5 sm:p-8" onClick={(event) => event.stopPropagation()}><div className="flex items-start justify-between gap-4"><div><p className="eyebrow">Detail makam · {makam.kategori}</p><h2 id="grave-detail-title" className="mt-2 text-2xl font-semibold sm:text-3xl">{makam.judul}</h2></div><button onClick={onClose} className="grid min-h-11 min-w-11 place-items-center rounded-full border border-[#ffffff1a] text-[#a7a69f]" aria-label="Tutup detail"><X size={18} /></button></div><div className="mt-6 grid gap-4 border-y border-[#ffffff12] py-5 text-sm sm:grid-cols-3"><div><p className="text-[#6c6b67]">Pembuat</p><p className="mt-1">{makam.pembuat}</p></div><div><p className="text-[#6c6b67]">Masa hidup</p><p className="mt-1">{formatTanggal(makam.tanggalMulai)} — {formatTanggal(makam.tanggalMenyerah)}</p><p className="text-xs text-[#a7a69f]">{getLabelDurasi(getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah))}</p></div><div><p className="text-[#6c6b67]">Kerugian angka</p><p className="mt-1">{formatKerugian(makam)}</p></div></div>{makam.kronologi.trim() && <p className="mt-6 text-sm leading-7 text-[#c4c1bb]">{makam.kronologi}</p>}<p className="mt-5 border-l-2 border-[#d87078] pl-4 font-serif text-lg italic text-[#f4f1e9]">“{makam.epitaph}”</p><div className="relative mt-6 flex flex-wrap gap-3"><FlowerBurst active={flowerBurst} onDone={() => setFlowerBurst(false)} /><button disabled={flowerStatus === "done"} onClick={() => { if (flowerStatus === "active") setFlowerBurst(true); onFlower(makam.id); }} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#d87078] px-5 text-sm font-semibold text-[#211116] disabled:cursor-not-allowed disabled:opacity-50">{flowerStatus === "login" ? "Masuk untuk menabur" : flowerStatus === "done" ? `Sudah menabur · ${flowerCountdown ?? "..."}` : `Tabur bunga · ${makam.bunga}`}</button><button onClick={() => onCandle(makam.id)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#ffffff1a] px-5 text-sm"><Flame size={16} /> {candleMine ? "Padamkan lilin" : "Nyalakan lilin"} · {makam.lilinCount ?? (makam.lilin ? 1 : 0)}</button></div><div className="mt-8 border-t border-[#ffffff12] pt-6"><div className="flex items-center gap-2"><MessageCircle size={17} className="text-[#d8ad69]" /><h3 className="font-semibold">Doa & curhat senasib</h3></div><form onSubmit={submit} className="mt-4 space-y-3"><input maxLength={30} value={input.nama} onChange={(event) => setInput({ ...input, nama: event.target.value })} placeholder="Nama (opsional, default Anonim)" /><textarea required maxLength={280} rows={3} value={input.isi} onChange={(event) => setInput({ ...input, isi: event.target.value })} placeholder="Tulis doa atau curhat..." /><div className="flex items-center justify-between gap-3"><span className="font-mono text-[10px] text-[#6c6b67]">{input.isi.length}/280</span><button disabled={saving} className="min-h-10 rounded-full border border-[#d87078]/60 px-4 text-sm text-[#f08c91] disabled:opacity-50">{saving ? "Mengirim..." : "Tinggalkan doa"}</button></div></form>{error && <p role="alert" className="mt-3 text-sm text-[#f08c91]">{error}</p>}<div className="mt-6 space-y-4">{makam.komentar.map((comment) => <article key={comment.id} className="border-l border-[#ffffff1a] pl-4"><p className="text-xs font-medium text-[#d8ad69]">{comment.nama}</p><p className="mt-1 text-sm leading-6 text-[#a7a69f]">{comment.isi}</p></article>)}</div></div></div></div>;
+  const { toast } = useToast();
+  const [input, setInput] = useState<KomentarInput>({ nama: "", isi: "" });
+  const [saving, setSaving] = useState(false);
+  const [flowerBurst, setFlowerBurst] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!input.isi.trim()) { toast("Tulis doa atau curhat dulu.", "danger"); return; }
+    setSaving(true);
+    try { await onComment(makam.id, input); setInput({ nama: "", isi: "" }); toast("Komentar terkirim.", "success"); }
+    catch (reason) { toast(reason instanceof Error ? reason.message : "Komentar belum bisa dikirim.", "danger"); }
+    finally { setSaving(false); }
+  }
+
+  function handleFlower() { if (flowerStatus === "active") setFlowerBurst(true); onFlower(makam.id); }
+
+  return <Dialog open title="Detail makam" onClose={onClose} className="modal-dialog-wide">
+    <div className="grave-detail-content">
+      <div className="grave-detail-heading"><div><div className="grave-detail-badges"><Badge tone="neutral">{categoryLabel[makam.kategori]}</Badge><span className="grave-detail-date">{formatTanggal(makam.tanggalMenyerah)}</span></div><h3 className="grave-detail-title">{makam.judul}</h3><p className="grave-detail-life">Hidup {getLabelDurasi(getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah))}</p></div></div>
+      <div className="grave-detail-meta"><div><span>Pembuat</span><strong>{makam.pembuat}</strong></div><div><span>Dimulai</span><strong>{formatTanggal(makam.tanggalMulai)}</strong></div><div><span>Kerugian</span><strong>{formatKerugian(makam)}</strong></div></div>
+      <section className="grave-detail-section"><h3>Penyebab gugur</h3><p>{makam.penyebab}</p></section>
+      <p className="grave-detail-epitaph">“{makam.epitaph}”</p>
+      {makam.kronologi.trim() && <section className="grave-detail-section"><h3>Kronologi</h3><p>{makam.kronologi}</p></section>}
+      <div className="grave-detail-actions"><FlowerBurst active={flowerBurst} onDone={() => setFlowerBurst(false)} /><Tooltip label={flowerStatus === "done" ? `Bisa menabur lagi dalam ${flowerCountdown ?? "..."}` : flowerStatus === "login" ? "Masuk untuk menabur bunga" : "Tabur bunga"}><Button disabled={flowerStatus === "done"} onClick={handleFlower}><Flower2 size={16} aria-hidden="true" /><span>{flowerStatus === "login" ? "Masuk untuk menabur" : flowerStatus === "done" ? `Besok lagi · ${flowerCountdown ?? "..."}` : `Tabur bunga · ${makam.bunga}`}</span></Button></Tooltip><Tooltip label={candleMine ? "Matikan lilin" : "Nyalakan lilin"}><Button variant="secondary" onClick={() => onCandle(makam.id)} aria-pressed={candleMine}><Flame size={16} aria-hidden="true" /><span>{candleMine ? "Matikan lilin" : "Nyalakan lilin"} · {makam.lilinCount ?? (makam.lilin ? 1 : 0)}</span></Button></Tooltip></div>
+      <section className="grave-comments" aria-labelledby="comments-title"><div className="grave-comments-heading"><h3 id="comments-title"><MessageCircle size={17} aria-hidden="true" />Doa dan komentar</h3><span>{makam.komentar.length}</span></div>{makam.komentar.length ? <div className="grave-comment-list">{makam.komentar.map((comment) => <article className="grave-comment" key={comment.id}><Avatar name={comment.nama} size="sm" /><div><div className="grave-comment-meta"><strong>{comment.nama}</strong><time dateTime={comment.createdAt}>{relativeTime(comment.createdAt)}</time></div><p>{comment.isi}</p></div></article>)}</div> : <EmptyState title="Belum ada doa" description="Jadilah yang pertama meninggalkan jejak." icon={<MessageCircle size={18} aria-hidden="true" />} />}</section>
+      <form className="grave-comment-form" onSubmit={submit}><Textarea label="Tinggalkan doa atau curhat" value={input.isi} maxLength={280} onChange={(event) => setInput((current) => ({ ...current, isi: event.target.value }))} helperText={`${input.isi.length}/280`} placeholder="Semoga wacana ini beristirahat dengan tenang." /><InputName value={input.nama ?? ""} onChange={(value) => setInput((current) => ({ ...current, nama: value }))} /><Button type="submit" loading={saving}><MessageCircle size={16} aria-hidden="true" />Kirim komentar</Button></form>
+    </div>
+  </Dialog>;
 }
+
+function InputName({ value, onChange }: { value: string; onChange: (value: string) => void }) { return <Input label="Nama" helperText="Opsional" maxLength={30} value={value} onChange={(event) => onChange(event.target.value)} placeholder="Anonim" />; }
+function relativeTime(value: string): string { const seconds = Math.max(0, (Date.now() - new Date(value).getTime()) / 1000); if (seconds < 60) return "baru saja"; const minutes = Math.floor(seconds / 60); if (minutes < 60) return `${minutes} menit lalu`; const hours = Math.floor(minutes / 60); if (hours < 24) return `${hours} jam lalu`; const days = Math.floor(hours / 24); return days < 30 ? `${days} hari lalu` : formatTanggal(value); }

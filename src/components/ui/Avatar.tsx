@@ -5,7 +5,7 @@ interface AvatarProps { name?: string; initials?: string; src?: string | null; s
 export function Avatar({ name = "Anonim", initials: providedInitials, src, size = "md" }: AvatarProps) {
   const initials = providedInitials || name.trim().slice(0, 2).toUpperCase() || "A";
   const preset = src?.startsWith("preset:") ? src.slice("preset:".length) : null;
-  return <span className={`ui-avatar ui-avatar-${size}`} aria-label={`Avatar ${name}`}>{preset ? <PresetAvatar preset={preset} /> : src ? <img src={src} alt="" /> : initials}</span>;
+  return <span className={`ui-avatar ui-avatar-${size}`} aria-label={`Avatar ${name}`}>{preset ? <PresetAvatar preset={preset} /> : src ? <img src={src} alt="" loading={size === "lg" ? "eager" : "lazy"} decoding="async" width={size === "lg" ? 80 : size === "md" ? 40 : 32} height={size === "lg" ? 80 : size === "md" ? 40 : 32} /> : initials}</span>;
 }
 
 function PresetAvatar({ preset }: { preset: string }) {

@@ -22,10 +22,12 @@ import { useWibCountdown } from "@/components/useWibCountdown";
 import { Button } from "@/components/ui/Button";
 import { HeroIllustration } from "@/components/HeroIllustration";
 import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/components/ui/Toast";
 
 export default function Home() {
   const { makam, statistik, loading, error, bunga, lilin, komentar, kuburkan, bungaStatus, lilinSaya, refresh, refreshPersonalStatus } = useGraveyard();
   const { user, configured, signOut } = useAuth();
+  const { toast } = useToast();
   const { profile: profileRecord, display: profile, mutate: mutateProfile } = useProfile(user);
   const [loginOpen, setLoginOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -42,6 +44,7 @@ export default function Home() {
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   useEffect(() => { if (!heroCtaRef.current || !("IntersectionObserver" in window)) { setHeroCtaVisible(false); return; } const observer = new IntersectionObserver(([entry]) => setHeroCtaVisible(entry.isIntersecting), { threshold: .1 }); observer.observe(heroCtaRef.current); return () => observer.disconnect(); }, []);
   const requireLogin = (action: () => void) => { if (!user) { setLoginOpen(true); return; } action(); };
+  const runRitual = (action: () => Promise<void>, successMessage: string) => { void action().then(() => toast(successMessage, "success")).catch((reason) => toast(reason instanceof Error ? reason.message : "Ritual belum bisa dilakukan.", "danger")); };
   const filtered = useMemo(() => makam
     .filter((item) => category === "semua" || item.kategori === category)
     .filter((item) => `${item.judul} ${item.penyebab}`.toLowerCase().includes(search.toLowerCase().trim()))
@@ -62,7 +65,7 @@ export default function Home() {
   const resetFilters = () => { setCategory("semua"); setSearchInput(""); setSort("terbaru"); };
 
   return (
-    <main id="top" className="relative min-h-screen overflow-hidden pb-20">
+    <main id="main" className="relative min-h-screen overflow-hidden pb-20">
       <AmbientBackground />
       <Header onBury={() => requireLogin(() => setBuryOpen(true))} profile={user ? profile : undefined} onLogin={() => setLoginOpen(true)} onEditProfile={() => setProfileOpen(true)} onLogout={() => void signOut()} ctaVisible={heroCtaVisible} />
       {!configured && <div className="container-shell mt-2"><p role="status" className="status-banner">{process.env.NODE_ENV === "production" ? "Supabase belum dikonfigurasi. Isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY." : "Mode lokal aktif untuk development. Login dan aksi tersimpan server menunggu konfigurasi Supabase."}</p></div>}
@@ -100,10 +103,10 @@ export default function Home() {
         <FilterBar category={category} search={searchInput} onCategory={setCategory} onSearch={setSearchInput} />
         <p className="sr-only" aria-live="polite">{filtered.length} makam ditemukan</p>
         <div className="graveyard-grid-wrap">
-          <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => void bunga(id))} onCandle={(id) => requireLogin(() => void lilin(id))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} candleMine={(id) => lilinSaya.has(id)} />
+          <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} candleMine={(id) => lilinSaya.has(id)} />
         </div>
       </section>
-      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => void bunga(id))} onCandle={(id) => requireLogin(() => void lilin(id))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} candleMine={lilinSaya.has(selected.id)} />}
+      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} candleMine={lilinSaya.has(selected.id)} />}
       {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={(newMakam) => { setBuryOpen(false); setHighlightedId(newMakam.id); window.setTimeout(() => setHighlightedId(null), 1900); window.setTimeout(() => setCertificate(newMakam), 900); }} />}
       {certificate && <DeathCertificateModal makam={certificate} onClose={() => setCertificate(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}

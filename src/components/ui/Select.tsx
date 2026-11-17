@@ -10,7 +10,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 export function Select({ label, id, helperText, error, className = "", children, ...props }: SelectProps) {
   return <label className="ui-field">
     {label && <span className="ui-field-label">{label}</span>}
-    <select {...props} id={id} aria-invalid={Boolean(error)} className={`ui-select ${className}`}>{children}</select>
-    {(error || helperText) && <span className={`ui-field-help ${error ? "ui-field-error" : ""}`}>{error ?? helperText}</span>}
+    <select {...props} id={id} aria-invalid={Boolean(error)} aria-describedby={id && (error || helperText) ? `${id}-feedback` : undefined} className={`ui-select ${className}`}>{children}</select>
+    {(error || helperText) && <span id={id ? `${id}-feedback` : undefined} className={`ui-field-help ${error ? "ui-field-error" : ""}`}>{error ?? helperText}</span>}
   </label>;
 }

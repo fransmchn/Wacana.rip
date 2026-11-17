@@ -1,47 +1,79 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CalendarDays, Check, X } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
+import { CalendarDays, Check } from "lucide-react";
+import { Dialog } from "@/components/ui/Dialog";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import type { CreateMakamInput, Kategori, Makam } from "@/types/graveyard";
 import { getDurasiHari, getLabelDurasi } from "@/lib/utils";
 
 const categoryLabels: Record<Kategori, string> = { skripsi: "Skripsi & riset", koding: "Koding & teknologi", desain: "Desain & karya", bisnis: "Bisnis & usaha", resolusi: "Resolusi & hobi", hubungan: "Hubungan", pribadi: "Hal pribadi", pekerjaan: "Pekerjaan & karier", keluarga: "Keluarga", kesehatan: "Kesehatan", perjalanan: "Perjalanan", lainnya: "Lainnya" };
 const today = () => new Date().toISOString().slice(0, 10);
+type FieldErrors = Partial<Record<keyof CreateMakamInput, string>>;
 
 interface BuryModalProps { onClose: () => void; onSubmit: (input: CreateMakamInput) => Promise<Makam>; onCreated: (makam: Makam) => void; }
 
 export function BuryModal({ onClose, onSubmit, onCreated }: BuryModalProps) {
+  const { toast } = useToast();
   const [form, setForm] = useState<CreateMakamInput>({ judul: "", kategori: "lainnya", pembuat: "", tanggalMulai: today(), tanggalMenyerah: today(), penyebab: "", epitaph: "" });
   const [showLoss, setShowLoss] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
   const durasi = useMemo(() => getDurasiHari(form.tanggalMulai, form.tanggalMenyerah), [form.tanggalMulai, form.tanggalMenyerah]);
+  const dirty = Object.entries(form).some(([key, value]) => key === "kategori" ? value !== "lainnya" : Boolean(value));
   const set = <K extends keyof CreateMakamInput>(key: K, value: CreateMakamInput[K]) => setForm((current) => ({ ...current, [key]: value }));
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(null); setSaving(true);
-    try { const makam = await onSubmit(form); onCreated(makam); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Ritual gagal dilakukan."); }
+  function requestClose() { if (dirty) setConfirmClose(true); else onClose(); }
+
+  function validate(): FieldErrors {
+    const next: FieldErrors = {};
+    if (!form.judul.trim()) next.judul = "Nama wacana wajib diisi.";
+    if (!form.tanggalMulai) next.tanggalMulai = "Tanggal mulai wajib diisi.";
+    if (!form.tanggalMenyerah) next.tanggalMenyerah = "Tanggal menyerah wajib diisi.";
+    if (form.tanggalMulai && form.tanggalMenyerah && form.tanggalMenyerah < form.tanggalMulai) next.tanggalMenyerah = "Tanggal gugur tidak boleh sebelum tanggal lahir.";
+    if (form.tanggalMenyerah > today()) next.tanggalMenyerah = "Tanggal gugur belum terjadi.";
+    if (!form.penyebab.trim()) next.penyebab = "Penyebab kematian wajib diisi.";
+    if (!form.epitaph.trim()) next.epitaph = "Kata terakhir wajib diisi.";
+    return next;
+  }
+
+  function mapSubmitError(reason: unknown): FieldErrors {
+    const message = reason instanceof Error ? reason.message : "Ritual gagal dilakukan.";
+    if (message.includes("Nama wacana")) return { judul: message };
+    if (message.includes("Tanggal mulai")) return { tanggalMulai: message };
+    if (message.includes("Tanggal")) return { tanggalMenyerah: message };
+    if (message.includes("Penyebab")) return { penyebab: message };
+    if (message.includes("Kata terakhir")) return { epitaph: message };
+    return {};
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextErrors = validate();
+    if (Object.keys(nextErrors).length) { setErrors(nextErrors); return; }
+    setErrors({}); setSaving(true);
+    try { const makam = await onSubmit(form); toast("Makam berhasil dikuburkan.", "success"); onCreated(makam); }
+    catch (reason) { const next = mapSubmitError(reason); setErrors(next); toast(reason instanceof Error ? reason.message : "Pemakaman belum bisa dilakukan.", "danger"); }
     finally { setSaving(false); }
   }
 
-  return <div role="dialog" aria-modal="true" aria-labelledby="bury-title" className="fixed inset-0 z-30 overflow-y-auto bg-black/75 p-4 sm:p-8" onClick={onClose}>
-    <div className="panel modal-surface mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col rounded-2xl p-5 sm:min-h-0 sm:p-8" onClick={(event) => event.stopPropagation()}>
-      <div className="flex items-start justify-between gap-4 border-b border-[#ffffff12] pb-6"><div><p className="eyebrow">Ritual pemakaman</p><h2 id="bury-title" className="mt-2 text-3xl font-semibold tracking-[-.04em]">Kuburkan Wacana</h2><p className="mt-2 max-w-lg text-sm leading-6 text-[#a7a69f]">Beri tempat layak bagi sesuatu yang pernah kamu perjuangkan.</p></div><button type="button" onClick={onClose} className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-full border border-[#ffffff1a] text-[#a7a69f] transition hover:border-[#ffffff35] hover:bg-[#ffffff08] hover:text-[#f4f1e9]" aria-label="Tutup form"><X size={18} /></button></div>
-      <form onSubmit={submit} className="mt-8 flex min-h-0 flex-1 flex-col space-y-5">
-        <Field label="Nama wacana / judul" required><input required maxLength={120} value={form.judul} onChange={(event) => set("judul", event.target.value)} placeholder="Contoh: Aplikasi yang mengubah hidup" /></Field>
-        <div className="grid gap-5 sm:grid-cols-2"><Field label="Kategori" required><select value={form.kategori} onChange={(event) => set("kategori", event.target.value as Kategori)}>{Object.entries(categoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field><Field label="Nama pembuat"><input maxLength={30} value={form.pembuat} onChange={(event) => set("pembuat", event.target.value)} placeholder="Anonim" /></Field></div>
-        <div className="grid gap-5 sm:grid-cols-2"><Field label="Tanggal mulai" required><input type="date" required max={form.tanggalMenyerah || today()} value={form.tanggalMulai} onChange={(event) => set("tanggalMulai", event.target.value)} /></Field><Field label="Tanggal menyerah" required><input type="date" required max={today()} min={form.tanggalMulai} value={form.tanggalMenyerah} onChange={(event) => set("tanggalMenyerah", event.target.value)} /></Field></div>
-        <div className="flex items-center gap-2 rounded-xl border border-[#d8ad69]/25 bg-[#d8ad69]/10 px-4 py-3 text-sm text-[#d8ad69]"><CalendarDays size={16} aria-hidden="true" /> Umur wacana: <strong>{getLabelDurasi(durasi)}</strong></div>
-        <Field label="Kenapa berakhir" required counter={`${form.penyebab.length}/160`}><textarea required maxLength={160} rows={3} value={form.penyebab} onChange={(event) => set("penyebab", event.target.value)} placeholder="Contoh: kami memilih jalan masing-masing" /></Field>
-        <Field label="Kata terakhir" required counter={`${form.epitaph.length}/140`}><input required maxLength={140} value={form.epitaph} onChange={(event) => set("epitaph", event.target.value)} placeholder="Satu kalimat untuk dikenang" /></Field>
-        
-        <div className={`rounded-xl border p-4 transition ${showLoss ? "border-[#d8ad69]/25 bg-[#d8ad69]/[.06]" : "border-[#ffffff12] bg-[#ffffff04]"}`}><div className="flex items-center justify-between gap-4"><div><p className="text-sm font-medium text-[#f4f1e9]">Catat kerugian</p><p className="mt-1 text-xs leading-5 text-[#a7a69f]">Opsional: biaya, waktu, atau hal lain yang ikut hilang.</p></div><label className="group flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-end" title="Aktifkan pencatatan kerugian"><input type="checkbox" checked={showLoss} onChange={(event) => { setShowLoss(event.target.checked); if (!event.target.checked) { set("kerugianTeks", undefined); set("kerugianRupiah", undefined); set("kerugianJam", undefined); } }} className="peer sr-only" /><span className="grid h-6 w-6 place-items-center rounded-md border border-[#d8ad69]/50 bg-[#0f0f12] text-[#d8ad69] opacity-70 transition group-hover:border-[#f08c91] peer-focus-visible:ring-2 peer-focus-visible:ring-[#f08c91]/70 peer-checked:bg-[#d87078] peer-checked:text-[#211116] peer-checked:opacity-100"><Check size={14} strokeWidth={3} aria-hidden="true" /></span></label></div>{showLoss && <div className="mt-4 grid gap-5 border-t border-[#ffffff12] pt-4 sm:grid-cols-3"><Field label="Catatan"><input value={form.kerugianTeks ?? ""} onChange={(event) => set("kerugianTeks", event.target.value)} placeholder="Kopi, waktu, harapan" /></Field><Field label="Rupiah"><input type="number" min="0" value={form.kerugianRupiah ?? ""} onChange={(event) => set("kerugianRupiah", event.target.value ? Number(event.target.value) : undefined)} placeholder="150000" /></Field><Field label="Jam"><input type="number" min="0" value={form.kerugianJam ?? ""} onChange={(event) => set("kerugianJam", event.target.value ? Number(event.target.value) : undefined)} placeholder="24" /></Field></div>}</div>
-        {error && <p role="alert" className="rounded-xl border border-[#d87078]/40 bg-[#d87078]/10 px-4 py-3 text-sm text-[#f08c91]">{error}</p>}
-        <button type="submit" disabled={saving} className="sticky bottom-0 min-h-12 w-full rounded-xl bg-[#d87078] px-5 text-sm font-semibold text-[#211116] shadow-[0_-12px_20px_rgba(9,9,11,.7)] transition hover:bg-[#f08c91] disabled:cursor-wait disabled:opacity-60">{saving ? "Menurunkan nisan..." : "Kuburkan wacana"}</button>
-      </form>
-    </div>
-  </div>;
+  return <Dialog open title="Kuburkan wacana" onClose={requestClose} className="modal-dialog-wide">
+    <form className="modal-form" onSubmit={submit}>
+      <p className="modal-intro">Beri tempat layak bagi sesuatu yang pernah kamu perjuangkan.</p>
+      <Input data-autofocus required label="Nama wacana / judul" value={form.judul} maxLength={120} onChange={(event) => set("judul", event.target.value)} placeholder="Contoh: Aplikasi yang mengubah hidup" error={errors.judul} trailing={<span className="ui-counter">{form.judul.length}/120</span>} />
+      <div className="modal-form-grid"><Select label="Kategori" value={form.kategori} onChange={(event) => set("kategori", event.target.value as Kategori)}>{Object.entries(categoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select><Input label="Nama pembuat" maxLength={30} value={form.pembuat} onChange={(event) => set("pembuat", event.target.value)} placeholder="Anonim" /></div>
+      <div className="modal-form-grid"><Input label="Tanggal mulai" type="date" required max={form.tanggalMenyerah || today()} value={form.tanggalMulai} onChange={(event) => set("tanggalMulai", event.target.value)} error={errors.tanggalMulai} /><Input label="Tanggal menyerah" type="date" required max={today()} min={form.tanggalMulai} value={form.tanggalMenyerah} onChange={(event) => set("tanggalMenyerah", event.target.value)} error={errors.tanggalMenyerah} /></div>
+      <div className="modal-age-note"><CalendarDays size={16} aria-hidden="true" /><span>Umur wacana: <strong>{getLabelDurasi(durasi)}</strong></span></div>
+      <Textarea label="Kenapa berakhir" required maxLength={160} rows={3} value={form.penyebab} onChange={(event) => set("penyebab", event.target.value)} placeholder="Contoh: kami memilih jalan masing-masing" error={errors.penyebab} helperText={`${form.penyebab.length}/160`} />
+      <Input label="Kata terakhir" required maxLength={140} value={form.epitaph} onChange={(event) => set("epitaph", event.target.value)} placeholder="Satu kalimat untuk dikenang" error={errors.epitaph} trailing={<span className="ui-counter">{form.epitaph.length}/140</span>} />
+      <section className={`loss-panel ${showLoss ? "loss-panel-active" : ""}`} aria-labelledby="loss-title"><div className="loss-panel-heading"><div><h3 id="loss-title">Catat kerugian</h3><p>Opsional: biaya, waktu, atau hal lain yang ikut hilang.</p></div><label className="loss-toggle"><input type="checkbox" checked={showLoss} onChange={(event) => { setShowLoss(event.target.checked); if (!event.target.checked) { set("kerugianTeks", undefined); set("kerugianRupiah", undefined); set("kerugianJam", undefined); } }} /><span aria-hidden="true"><Check size={14} /></span><span className="sr-only">Aktifkan pencatatan kerugian</span></label></div>{showLoss && <div className="modal-form-grid modal-form-grid-three"><Input label="Catatan" value={form.kerugianTeks ?? ""} onChange={(event) => set("kerugianTeks", event.target.value)} placeholder="Kopi, waktu, harapan" /><Input label="Rupiah" type="number" min="0" value={form.kerugianRupiah ?? ""} onChange={(event) => set("kerugianRupiah", event.target.value ? Number(event.target.value) : undefined)} placeholder="150000" /><Input label="Jam" type="number" min="0" value={form.kerugianJam ?? ""} onChange={(event) => set("kerugianJam", event.target.value ? Number(event.target.value) : undefined)} placeholder="24" /></div>}</section>
+      <div className="modal-footer"><Button type="button" variant="ghost" onClick={requestClose}>Batal</Button><Button className="modal-action-primary" type="submit" loading={saving}>{saving ? "Menurunkan nisan..." : "Kuburkan wacana"}</Button></div>
+      {confirmClose && <div className="modal-confirm" role="alertdialog" aria-label="Konfirmasi buang isian"><p>Buang isian?</p><span>Isian yang belum disimpan akan hilang.</span><div><Button type="button" variant="ghost" onClick={() => setConfirmClose(false)}>Lanjut edit</Button><Button type="button" variant="danger" onClick={onClose}>Buang isian</Button></div></div>}
+    </form>
+  </Dialog>;
 }
-
-function Field({ label, required, counter, children }: { label: string; required?: boolean; counter?: string; children: React.ReactNode }) { return <label className="block text-sm"><span className="mb-2 flex justify-between gap-3 font-medium text-[#f4f1e9]"><span>{label}{required && <span className="ml-1 text-[#f08c91]" aria-label="wajib diisi">*</span>}</span>{counter && <span className="font-mono text-[10px] text-[#6c6b67]">{counter}</span>}</span>{children}</label>; }

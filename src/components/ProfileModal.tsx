@@ -98,8 +98,22 @@ export function ProfileModal({ user, profile, onClose, onSave, onLogout }: Profi
     context.drawImage(cropImage, (256 - cropImage.naturalWidth * scale) / 2 + offset.x, (256 - cropImage.naturalHeight * scale) / 2 + offset.y, cropImage.naturalWidth * scale, cropImage.naturalHeight * scale);
     canvas.toBlob(async (blob) => {
       if (!blob) return;
-      try { const next = await uploadAvatar(user.id, blob); const previous = avatarUrl; setAvatarUrl(next); await removeAvatar(user.id, previous); setCropSource(null); setCropImage(null); toast("Foto profil berhasil diunggah.", "success"); }
-      catch { toast("Foto profil gagal diunggah.", "danger"); }
+      try {
+        const next = await uploadAvatar(user.id, blob);
+        const previous = avatarUrl;
+        try {
+          await onSave({ display_name: name.trim(), username: normalizeUsername(username) || null, bio: bio.trim() || null, avatar_url: next });
+        } catch (reason) {
+          await removeAvatar(user.id, next).catch(() => undefined);
+          throw reason;
+        }
+        setAvatarUrl(next);
+        if (previous && previous !== next) await removeAvatar(user.id, previous).catch(() => undefined);
+        setCropSource(null); setCropImage(null);
+        toast("Foto profil berhasil diunggah.", "success");
+      } catch (reason) {
+        toast(reason instanceof Error ? reason.message : "Foto profil gagal diunggah.", "danger");
+      }
     }, "image/webp", .86);
   }
 

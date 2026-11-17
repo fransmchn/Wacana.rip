@@ -1,13 +1,45 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Download, X } from "lucide-react";
+import { Download, Share2 } from "lucide-react";
 import { toPng } from "html-to-image";
+import { Dialog } from "@/components/ui/Dialog";
+import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import type { Makam } from "@/types/graveyard";
 import { formatKerugian, formatTanggal, getDurasiHari, getLabelDurasi } from "@/lib/utils";
 
+// Static values intentionally kept for certificate PNG export.
+const certificatePalette = { ink: "#f4f1e9", muted: "#a7a69f", gold: "#d8ad69", paper: "#211c1c", border: "#d8ad69" };
+
 export function DeathCertificateModal({ makam, onClose }: { makam: Makam; onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null); const [error, setError] = useState(""); const [downloading, setDownloading] = useState(false);
-  async function download() { if (!ref.current) return; setDownloading(true); setError(""); try { const dataUrl = await toPng(ref.current, { pixelRatio: 2, cacheBust: true }); const link = document.createElement("a"); link.download = `sertifikat-${makam.id.slice(-8)}.png`; link.href = dataUrl; link.click(); } catch { setError("Sertifikat gagal dibuat. Coba lagi atau gunakan screenshot."); } finally { setDownloading(false); } }
-  return <div role="dialog" aria-modal="true" aria-labelledby="certificate-title" className="fixed inset-0 z-40 grid place-items-center overflow-y-auto bg-black/80 p-4" onClick={onClose}><div className="w-full max-w-lg" onClick={(event) => event.stopPropagation()}><div ref={ref} className="rounded-2xl border border-[#d8ad69]/50 bg-[#211c1c] p-7 text-[#f4f1e9] shadow-2xl sm:p-10"><div className="flex items-start justify-between gap-4 border-b border-[#d8ad69]/30 pb-5"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-[#d8ad69]">Wacana.rip · TPU Wacana</p><h2 id="certificate-title" className="mt-3 text-3xl font-semibold">Sertifikat Kematian</h2></div><span className="font-mono text-xs text-[#a7a69f]">#{makam.id.slice(-8).toUpperCase()}</span></div><p className="mt-8 text-center font-serif text-2xl italic">{makam.judul}</p><p className="mt-2 text-center text-sm text-[#a7a69f]">dinyatakan gugur dengan hormat</p><dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 text-sm"><div><dt className="text-[#a7a69f]">Pembuat</dt><dd className="mt-1">{makam.pembuat}</dd></div><div><dt className="text-[#a7a69f]">Penyebab</dt><dd className="mt-1">{makam.penyebab}</dd></div><div><dt className="text-[#a7a69f]">Lahir</dt><dd className="mt-1">{formatTanggal(makam.tanggalMulai)}</dd></div><div><dt className="text-[#a7a69f]">Gugur</dt><dd className="mt-1">{formatTanggal(makam.tanggalMenyerah)}</dd></div><div><dt className="text-[#a7a69f]">Masa hidup</dt><dd className="mt-1">{getLabelDurasi(getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah))}</dd></div><div><dt className="text-[#a7a69f]">Kerugian</dt><dd className="mt-1">{formatKerugian(makam)}</dd></div></dl><p className="mt-8 border-t border-[#d8ad69]/30 pt-6 text-center font-serif italic text-[#d8ad69]">“{makam.epitaph}”</p></div><div className="mt-4 flex gap-3"><button onClick={download} disabled={downloading} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#d87078] text-sm font-semibold text-[#211116] disabled:opacity-60"><Download size={16} /> {downloading ? "Membuat..." : "Download PNG"}</button><button onClick={onClose} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#ffffff1a] px-5 text-sm"><X size={16} /> Tutup</button></div>{error && <p role="alert" className="mt-3 text-center text-sm text-[#f08c91]">{error}</p>}</div></div>;
+  const { toast } = useToast();
+  const ref = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState<"download" | "share" | null>(null);
+
+  async function renderCertificate() {
+    if (!ref.current) throw new Error("Pratinjau sertifikat belum siap.");
+    return toPng(ref.current, { pixelRatio: 2, cacheBust: true });
+  }
+  async function download() {
+    setBusy("download");
+    try { const dataUrl = await renderCertificate(); const link = document.createElement("a"); link.download = `sertifikat-${makam.id.slice(-8)}.png`; link.href = dataUrl; link.click(); toast("Sertifikat berhasil diunduh.", "success"); }
+    catch { toast("Sertifikat gagal dibuat. Coba lagi.", "danger"); }
+    finally { setBusy(null); }
+  }
+  async function share() {
+    setBusy("share");
+    try {
+      const dataUrl = await renderCertificate();
+      if (!navigator.share) { const link = document.createElement("a"); link.download = `sertifikat-${makam.id.slice(-8)}.png`; link.href = dataUrl; link.click(); toast("Peramban belum mendukung bagikan. Sertifikat diunduh.", "info"); return; }
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `sertifikat-${makam.id.slice(-8)}.png`, { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ title: "Sertifikat Wacana", text: `Sertifikat untuk ${makam.judul}`, files: [file] });
+      else await navigator.share({ title: "Sertifikat Wacana", text: `Sertifikat untuk ${makam.judul}` });
+      toast("Sertifikat berhasil dibagikan.", "success");
+    } catch (reason) { if ((reason as DOMException)?.name !== "AbortError") toast("Sertifikat belum bisa dibagikan. Coba lagi.", "danger"); }
+    finally { setBusy(null); }
+  }
+
+  return <Dialog open title="Sertifikat kematian" onClose={onClose} className="certificate-dialog"><div className="certificate-content"><div ref={ref} className="certificate-card" style={{ color: certificatePalette.ink, backgroundColor: certificatePalette.paper, borderColor: certificatePalette.border }}><div className="certificate-card-header"><div><p className="certificate-kicker" style={{ color: certificatePalette.gold }}>Wacana.rip · TPU Wacana</p><h3>Sertifikat Kematian</h3></div><span>#{makam.id.slice(-8).toUpperCase()}</span></div><p className="certificate-title">{makam.judul}</p><p className="certificate-subtitle">dinyatakan gugur dengan hormat</p><dl><div><dt>Pembuat</dt><dd>{makam.pembuat}</dd></div><div><dt>Penyebab</dt><dd>{makam.penyebab}</dd></div><div><dt>Lahir</dt><dd>{formatTanggal(makam.tanggalMulai)}</dd></div><div><dt>Gugur</dt><dd>{formatTanggal(makam.tanggalMenyerah)}</dd></div><div><dt>Masa hidup</dt><dd>{getLabelDurasi(getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah))}</dd></div><div><dt>Kerugian</dt><dd>{formatKerugian(makam)}</dd></div></dl><p className="certificate-epitaph" style={{ color: certificatePalette.gold }}>“{makam.epitaph}”</p></div><div className="modal-footer"><Button loading={busy === "download"} disabled={Boolean(busy)} onClick={() => void download()}><Download size={16} aria-hidden="true" />Download</Button><Button variant="secondary" loading={busy === "share"} disabled={Boolean(busy)} onClick={() => void share()}><Share2 size={16} aria-hidden="true" />Bagikan</Button></div></div></Dialog>;
 }

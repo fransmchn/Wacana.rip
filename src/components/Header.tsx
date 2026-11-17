@@ -21,7 +21,7 @@ export function Header({ onBury, profile, onLogin, onEditProfile, onLogout, ctaV
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 8); window.addEventListener("scroll", onScroll, { passive: true }); onScroll(); return () => window.removeEventListener("scroll", onScroll); }, []);
   return <header className={`site-header ${scrolled ? "site-header-scrolled" : ""}`}><div className="container-shell site-header-inner">
-    <a href="#top" className="brand-mark"><span className="brand-symbol" aria-hidden="true">✦</span><span>WACANA.RIP</span></a>
+    <a href="#main" className="brand-mark"><span className="brand-symbol" aria-hidden="true">✦</span><span>WACANA.RIP</span></a>
     <div className="site-header-actions">
       {!profile && <Button variant="secondary" size="md" onClick={onLogin}>Masuk</Button>}
       <Button className={`header-cta-desktop ${ctaVisible ? "header-cta-hidden" : ""}`} size="md" onClick={onBury}><Plus size={16} strokeWidth={2.5} aria-hidden="true" />Kuburkan Wacana</Button>

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
-      <body className={`${spaceGrotesk.variable} ${dmMono.variable} ${newsreader.variable}`}><ToastProvider>{children}</ToastProvider></body>
+      <body className={`${spaceGrotesk.variable} ${dmMono.variable} ${newsreader.variable}`}><a className="skip-link" href="#main">Lewati ke konten utama</a><ToastProvider>{children}</ToastProvider></body>
     </html>
   );
 }
