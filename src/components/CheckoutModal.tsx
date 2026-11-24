@@ -4,19 +4,27 @@ import { useState, type ReactNode } from "react";
 import { Check, Crown, QrCode, ShieldCheck, Wallet } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
-import { VIP_PRICE, type PaymentMethod } from "@/lib/vipService";
+import { VIP_PRICE, type CreateCheckoutParams, type PaymentMethod } from "@/lib/payment";
+import { getTemaNisan } from "@/lib/themes";
 import { formatRupiah } from "@/lib/utils";
-import type { Makam } from "@/types/graveyard";
 
 interface CheckoutModalProps {
-  grave: Makam;
+  params: CreateCheckoutParams;
   onClose: () => void;
   onConfirm: (method: PaymentMethod) => Promise<void>;
 }
 
-export function CheckoutModal({ grave, onClose, onConfirm }: CheckoutModalProps) {
-  const [method, setMethod] = useState<PaymentMethod>("qris");
+const BENEFITS = [
+  "Nisan obsidian, marmer, chrome, atau crimson sesuai pilihanmu",
+  "Monumen lebih besar dengan emblem ukiran eksklusif",
+  "Terlindungi permanen dari erosi 7 hari",
+  "Ekspor story premium tanpa watermark besar",
+];
+
+export function CheckoutModal({ params, onClose, onConfirm }: CheckoutModalProps) {
+  const [method, setMethod] = useState<PaymentMethod>(params.method ?? "qris");
   const [busy, setBusy] = useState(false);
+  const tema = getTemaNisan(params.selectedTheme);
 
   async function confirm() {
     setBusy(true);
@@ -30,12 +38,16 @@ export function CheckoutModal({ grave, onClose, onConfirm }: CheckoutModalProps)
       <Button type="button" loading={busy} onClick={() => void confirm()}><ShieldCheck size={16} aria-hidden="true" />Simulasi Bayar Berhasil</Button>
     </>}>
       <div className="checkout-content">
-        <p className="modal-intro">Satu pembayaran, nisan obsidian dan emas selamanya. Erosi berhenti di sini.</p>
+        <p className="modal-intro">Satu pembayaran untuk mengunci tema pilihanmu selamanya. Erosi berhenti di sini.</p>
 
         <div className="checkout-grave">
           <span className="checkout-crest" aria-hidden="true"><Crown size={20} strokeWidth={1.5} /></span>
-          <div><span>Wacana yang diabadikan</span><strong>{grave.judul}</strong></div>
+          <div><span>Wacana yang diabadikan</span><strong>{params.graveTitle}</strong><small>Tema: {tema.label}</small></div>
         </div>
+
+        <ul className="checkout-benefits" aria-label="Keuntungan VIP">
+          {BENEFITS.map((benefit) => <li key={benefit}><Check size={14} aria-hidden="true" />{benefit}</li>)}
+        </ul>
 
         <div className="checkout-price">
           <span>Total pembayaran</span>

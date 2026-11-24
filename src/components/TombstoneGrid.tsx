@@ -15,12 +15,10 @@ interface TombstoneGridProps {
   onResetFilter?: () => void;
   onSelect: (makam: Makam) => void;
   onFlower: (id: string) => void;
-  onCandle: (id: string) => void;
   onBury: () => void;
   highlightedId?: string | null;
   flowerStatus: (id: string) => "active" | "done" | "login";
   flowerCountdown: (id: string) => string | undefined;
-  candleMine: (id: string) => boolean;
   isVip: (makam: Makam) => boolean;
   erosion: (makam: Makam) => ErosionInfo;
 }
@@ -47,7 +45,7 @@ function plotStyle(index: number): CSSProperties {
   } as CSSProperties;
 }
 
-export function TombstoneGrid({ makam, loading = false, hasFilter = false, error, onRetry, onResetFilter, onSelect, onFlower, onCandle, onBury, highlightedId, flowerStatus, flowerCountdown, candleMine, isVip, erosion }: TombstoneGridProps) {
+export function TombstoneGrid({ makam, loading = false, hasFilter = false, error, onRetry, onResetFilter, onSelect, onFlower, onBury, highlightedId, flowerStatus, flowerCountdown, isVip, erosion }: TombstoneGridProps) {
   if (loading) return <div className="graveyard-plots" aria-busy="true" aria-label="Memuat makam">{Array.from({ length: 6 }, (_, index) => <div key={index} className="grave-plot" style={plotStyle(index)}><div className="tombstone-skeleton"><Skeleton className="tombstone-skeleton-cap" /><Skeleton className="tombstone-skeleton-body" /></div></div>)}</div>;
   if (error) return <EmptyState icon={<AlertTriangle size={20} />} title="Pemakaman sedang berkabut" description={error} actionLabel={onRetry ? "Coba lagi" : undefined} onAction={onRetry} />;
   if (!makam.length && hasFilter) return <EmptyState title="Tidak ada makam yang cocok" description="Coba ubah kata pencarian atau kategori." actionLabel="Reset filter" onAction={onResetFilter} />;
@@ -60,10 +58,8 @@ export function TombstoneGrid({ makam, loading = false, hasFilter = false, error
             makam={item}
             onSelect={onSelect}
             onFlower={onFlower}
-            onCandle={onCandle}
             flowerStatus={flowerStatus(item.id)}
             flowerCountdown={flowerCountdown(item.id)}
-            candleMine={candleMine(item.id)}
             isVip={isVip(item)}
             erosion={erosion(item)}
             highlighted={item.id === highlightedId}

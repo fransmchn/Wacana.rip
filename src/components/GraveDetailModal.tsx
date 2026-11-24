@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Crown, Download, Flame, Flower2, Hourglass, MessageCircle } from "lucide-react";
+import { Crown, Flower2, Hourglass, MessageCircle, Sparkles } from "lucide-react";
 import { FlowerBurst } from "@/components/FlowerBurst";
 import { Dialog } from "@/components/ui/Dialog";
 import { Badge } from "@/components/ui/Badge";
@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
+import { resolveTheme } from "@/lib/themeService";
+import { getTemaNisan } from "@/lib/themes";
 import type { KomentarInput, Makam } from "@/types/graveyard";
 import type { ErosionInfo } from "@/lib/utils";
 import { formatKerugian, formatTanggal, getDurasiHari, getLabelDurasi } from "@/lib/utils";
@@ -22,31 +24,21 @@ interface GraveDetailModalProps {
   makam: Makam;
   onClose: () => void;
   onFlower: (id: string) => void;
-  onCandle: (id: string) => void;
   onComment: (id: string, input: KomentarInput) => Promise<void>;
   flowerStatus: "active" | "done" | "login";
   flowerCountdown?: string;
-  candleMine: boolean;
   vip: boolean;
   erosion: ErosionInfo;
   onUpgrade: (makam: Makam) => void;
-  onDownloadAkta?: (makam: Makam) => void | Promise<void>;
+  onOpenStory: (makam: Makam) => void;
 }
 
-export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment, flowerStatus, flowerCountdown, candleMine, vip, erosion, onUpgrade, onDownloadAkta }: GraveDetailModalProps) {
+export function GraveDetailModal({ makam, onClose, onFlower, onComment, flowerStatus, flowerCountdown, vip, erosion, onUpgrade, onOpenStory }: GraveDetailModalProps) {
   const { toast } = useToast();
   const [input, setInput] = useState<KomentarInput>({ nama: "", isi: "" });
   const [saving, setSaving] = useState(false);
   const [flowerBurst, setFlowerBurst] = useState(false);
-  const [aktaBusy, setAktaBusy] = useState(false);
-
-  async function downloadAkta() {
-    if (!onDownloadAkta) return;
-    setAktaBusy(true);
-    try { await onDownloadAkta(makam); toast("Akta kematian siap dibagikan.", "success"); }
-    catch (reason) { toast(reason instanceof Error ? reason.message : "Akta gagal dibuat.", "danger"); }
-    finally { setAktaBusy(false); }
-  }
+  const tema = getTemaNisan(resolveTheme(makam));
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -66,6 +58,7 @@ export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment
           <div>
             <div className="grave-detail-badges">
               <Badge tone={vip ? "gold" : "neutral"}>{categoryLabel[makam.kategori]}</Badge>
+              <Badge tone={vip ? "gold" : "neutral"}><Sparkles size={11} aria-hidden="true" />{tema.label}</Badge>
               {vip && <Badge tone="gold"><Crown size={11} aria-hidden="true" /> Abadi</Badge>}
               <span className="grave-detail-date">{formatTanggal(makam.tanggalMenyerah)}</span>
             </div>
@@ -76,7 +69,7 @@ export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment
 
         <div className={`grave-condition ${vip ? "grave-condition-vip" : ""}`}>
           {vip ? (
-            <p><Crown size={15} aria-hidden="true" /> Makam Abadi · terlindungi dari erosi, selalu menyala.</p>
+            <p><Crown size={15} aria-hidden="true" /> Makam Abadi · {tema.label}, terlindungi dari erosi.</p>
           ) : (
             <>
               <div className="grave-condition-meta"><span><Hourglass size={13} aria-hidden="true" /> {erosion.label}</span><span>{erosion.progress}% erosi</span></div>
@@ -94,10 +87,7 @@ export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment
           <Tooltip label={flowerStatus === "done" ? `Bisa menabur lagi dalam ${flowerCountdown ?? "..."}` : flowerStatus === "login" ? "Masuk untuk menabur bunga" : "Tabur bunga"}>
             <Button disabled={flowerStatus === "done"} onClick={handleFlower}><Flower2 size={16} aria-hidden="true" /><span>{flowerStatus === "login" ? "Masuk untuk menabur" : flowerStatus === "done" ? `Besok lagi · ${flowerCountdown ?? "..."}` : `Tabur bunga · ${makam.bunga}`}</span></Button>
           </Tooltip>
-          <Tooltip label={candleMine ? "Matikan lilin" : "Nyalakan lilin"}>
-            <Button variant="secondary" onClick={() => onCandle(makam.id)} aria-pressed={candleMine}><Flame size={16} aria-hidden="true" /><span>{candleMine ? "Matikan lilin" : "Nyalakan lilin"} · {makam.lilinCount ?? (makam.lilin ? 1 : 0)}</span></Button>
-          </Tooltip>
-          {onDownloadAkta && <Button variant="secondary" loading={aktaBusy} onClick={() => void downloadAkta()}><Download size={16} aria-hidden="true" /><span>Unduh Akta Kematian (PNG)</span></Button>}
+          <Button variant="secondary" onClick={() => onOpenStory(makam)}><Sparkles size={16} aria-hidden="true" /><span>Bagikan Story / Akta (PNG)</span></Button>
         </div>
 
         {!vip && (
@@ -105,7 +95,7 @@ export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment
             <span className="upgrade-emblem" aria-hidden="true"><Crown size={22} strokeWidth={1.5} /></span>
             <div className="upgrade-copy">
               <h3 id="upgrade-title">Upgrade ke Makam Abadi</h3>
-              <p>Ubah nisan ini menjadi monumen obsidian dan emas. Abadi, tak tererosi, dengan emblem ukiran sendiri.</p>
+              <p>Buka keempat tema premium, perbesar monumen, dan hentikan erosi permanen.</p>
             </div>
             <Button variant="secondary" onClick={() => onUpgrade(makam)}><Crown size={15} aria-hidden="true" />Upgrade ke Makam Abadi</Button>
           </section>

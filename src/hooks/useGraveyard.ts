@@ -4,13 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   BungaSudahDitaburError,
   createMakam,
-  getLilinSaya,
   getStatistik,
   getStatusBungaHariIni,
   listMakam,
   taburBunga,
   tambahKomentar,
-  toggleLilin,
   type BungaHariIni,
 } from "@/lib/graveyardService";
 import type { CreateMakamInput, KomentarInput, Makam, Statistik } from "@/types/graveyard";
@@ -21,12 +19,10 @@ interface UseGraveyard {
   loading: boolean;
   error: string | null;
   bungaStatus: Record<string, BungaHariIni>;
-  lilinSaya: Set<string>;
   refresh: () => Promise<void>;
   refreshPersonalStatus: (userId: string | undefined, ids: string[]) => Promise<void>;
   kuburkan: (input: CreateMakamInput) => Promise<Makam>;
   bunga: (id: string) => Promise<void>;
-  lilin: (id: string) => Promise<void>;
   komentar: (id: string, input: KomentarInput) => Promise<void>;
 }
 
@@ -38,7 +34,6 @@ export function useGraveyard(): UseGraveyard {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bungaStatus, setBungaStatus] = useState<Record<string, BungaHariIni>>({});
-  const [lilinSaya, setLilinSaya] = useState<Set<string>>(new Set());
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -55,15 +50,9 @@ export function useGraveyard(): UseGraveyard {
   }, []);
 
   const refreshPersonalStatus = useCallback(async (userId: string | undefined, ids: string[]) => {
-    if (!userId) {
-      setBungaStatus({});
-      setLilinSaya(new Set());
-      return;
-    }
+    if (!userId) { setBungaStatus({}); return; }
     try {
-      const [nextBunga, nextLilin] = await Promise.all([getStatusBungaHariIni(ids), getLilinSaya(ids)]);
-      setBungaStatus(nextBunga);
-      setLilinSaya(new Set(nextLilin.ids));
+      setBungaStatus(await getStatusBungaHariIni(ids));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Status peziarah gagal dimuat.");
     }
@@ -87,14 +76,14 @@ export function useGraveyard(): UseGraveyard {
     setMakam((state) => state.map((item) => item.id === id ? { ...item, bunga: item.bunga + 1 } : item));
     try {
       const updated = await taburBunga(id);
+      const status = await getStatusBungaHariIni([id]);
       replaceMakam(updated);
-      const confirmedStatus = await getStatusBungaHariIni([id]);
-      setBungaStatus((state) => ({ ...state, ...confirmedStatus }));
+      setBungaStatus((state) => ({ ...state, ...status }));
       await refreshStats();
       setError(null);
     } catch (reason) {
       if (reason instanceof BungaSudahDitaburError) {
-        setBungaStatus((state) => ({ ...state, [id]: { ...optimisticStatus, sudahMenabur: true } }));
+        setBungaStatus((state) => ({ ...state, [id]: optimisticStatus }));
         replaceMakam(current);
         await refreshStats();
         return;
@@ -105,35 +94,15 @@ export function useGraveyard(): UseGraveyard {
     }
   }, [bungaStatus, makam, refreshStats, replaceMakam]);
 
-  const lilin = useCallback(async (id: string) => {
-    const current = makam.find((item) => item.id === id);
-    if (!current) return;
-    const wasLit = lilinSaya.has(id);
-    const nextLit = !wasLit;
-    const previousCount = current.lilinCount ?? (current.lilin ? 1 : 0);
-    setLilinSaya((state) => { const next = new Set(state); if (nextLit) next.add(id); else next.delete(id); return next; });
-    setMakam((state) => state.map((item) => item.id === id ? { ...item, lilin: nextLit || previousCount - (wasLit ? 1 : 0) > 0, lilinCount: Math.max(0, previousCount + (nextLit ? 1 : -1)) } : item));
-    try {
-      const updated = await toggleLilin(id);
-      replaceMakam(updated);
-      setLilinSaya((state) => { const next = new Set(state); if (nextLit) next.add(id); else next.delete(id); return next; });
-      await refreshStats();
-      setError(null);
-    } catch (reason) {
-      setLilinSaya((state) => { const next = new Set(state); if (wasLit) next.add(id); else next.delete(id); return next; });
-      replaceMakam(current);
-      setError(reason instanceof Error ? reason.message : "Lilin gagal diubah.");
-    }
-  }, [lilinSaya, makam, refreshStats, replaceMakam]);
-
   const runAction = useCallback(async (action: () => Promise<Makam>) => {
     try { const updated = await action(); replaceMakam(updated); await refreshStats(); setError(null); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Ritual gagal dilakukan."); throw reason; }
   }, [refreshStats, replaceMakam]);
 
   return {
-    makam, statistik, loading, error, bungaStatus, lilinSaya, refresh, refreshPersonalStatus,
+    makam, statistik, loading, error, bungaStatus, refresh, refreshPersonalStatus,
     kuburkan: async (input) => { let result: Makam | undefined; await runAction(async () => { result = await createMakam(input); return result; }); if (!result) throw new Error("Makam gagal dibuat."); return result; },
-    bunga, lilin, komentar: async (id, input) => runAction(() => tambahKomentar(id, input)),
+    bunga,
+    komentar: async (id, input) => runAction(() => tambahKomentar(id, input)),
   };
 }

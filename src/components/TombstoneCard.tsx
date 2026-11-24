@@ -1,14 +1,16 @@
 "use client";
 
-import { Check, Crown, Flower2, Flame, Hourglass, Sparkles } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Check, Crown, Flower2, Hourglass, Sparkles } from "lucide-react";
 import { FlowerBurst } from "@/components/FlowerBurst";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
+import { resolveTheme } from "@/lib/themeService";
+import { getTemaNisan } from "@/lib/themes";
 import type { Makam } from "@/types/graveyard";
 import type { ErosionInfo } from "@/lib/utils";
-import { formatTanggal, getDurasiHari, getLabelDurasi, getTipeNisan } from "@/lib/utils";
+import { formatTanggal, getDurasiHari, getLabelDurasi } from "@/lib/utils";
 
 const categoryLabel: Record<Makam["kategori"], string> = {
   skripsi: "Skripsi", koding: "Koding", desain: "Desain", bisnis: "Bisnis", resolusi: "Resolusi", hubungan: "Hubungan", pribadi: "Pribadi", pekerjaan: "Pekerjaan", keluarga: "Keluarga", kesehatan: "Kesehatan", perjalanan: "Perjalanan", lainnya: "Lainnya",
@@ -18,39 +20,28 @@ interface TombstoneCardProps {
   makam: Makam;
   onSelect: (makam: Makam) => void;
   onFlower: (id: string) => void;
-  onCandle: (id: string) => void;
   flowerStatus: "active" | "done" | "login";
   flowerCountdown?: string;
-  candleMine: boolean;
   isVip: boolean;
   erosion: ErosionInfo;
   highlighted?: boolean;
 }
 
-export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatus, flowerCountdown, candleMine, isVip, erosion, highlighted = false }: TombstoneCardProps) {
-  const tipe = getTipeNisan(makam.tanggalMulai, makam.tanggalMenyerah);
+export function TombstoneCard({ makam, onSelect, onFlower, flowerStatus, flowerCountdown, isVip, erosion, highlighted = false }: TombstoneCardProps) {
   const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
   const [flowerBurst, setFlowerBurst] = useState(false);
-  const [litOverride, setLitOverride] = useState<boolean | null>(null);
   const isNew = durasi < 1;
-  const candleCount = makam.lilinCount ?? (makam.lilin ? 1 : 0);
-  const isLit = litOverride ?? (candleMine || makam.lilin);
-
-  useEffect(() => setLitOverride(null), [candleMine]);
+  const tema = getTemaNisan(resolveTheme(makam));
 
   function handleFlower() {
     if (flowerStatus === "active") setFlowerBurst(true);
     onFlower(makam.id);
   }
 
-  function handleCandle() {
-    setLitOverride(!isLit);
-    onCandle(makam.id);
-  }
-
   return (
     <article
-      className={`tombstone tombstone-${tipe} ${isVip ? "tombstone-vip" : ""} ${isLit ? "is-lit" : ""} ${highlighted ? "tombstone-new" : ""}`}
+      className={`tombstone tombstone-theme-${tema.id} ${isVip ? "tombstone-vip" : ""} ${highlighted ? "tombstone-new" : ""}`}
+      data-theme={tema.id}
       onClick={(event) => { if (event.target === event.currentTarget) onSelect(makam); }}
       onKeyDown={(event) => { if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(makam); } }}
       tabIndex={0}
@@ -58,7 +49,6 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
     >
       <span className="tombstone-ground-shadow" aria-hidden="true" />
       <span className="tombstone-light" aria-hidden="true" />
-      <span className="tombstone-candle-flame" aria-hidden="true"><i /></span>
       <FlowerBurst active={flowerBurst} onDone={() => setFlowerBurst(false)} />
       <div className="tombstone-cap" aria-hidden="true" />
       {isVip && <div className="tombstone-emblem" aria-hidden="true"><Crown size={18} strokeWidth={1.5} /></div>}
@@ -74,7 +64,7 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
         <div className="tombstone-copy"><p className="tombstone-label">Penyebab gugur</p><p className="tombstone-cause" data-truncate="true">{makam.penyebab}</p><p className="tombstone-epitaph" data-truncate="true">{makam.epitaph ? `“${makam.epitaph}”` : ""}</p></div>
         <div className="tombstone-preservation">
           {isVip ? (
-            <p className="tombstone-eternal"><Crown size={13} aria-hidden="true" /> Abadi · terpahat selamanya</p>
+            <p className="tombstone-eternal"><Crown size={13} aria-hidden="true" /> {tema.label} · abadi</p>
           ) : (
             <div className="tombstone-erosion">
               <div className="erosion-meta"><span><Hourglass size={12} aria-hidden="true" /> {erosion.label}</span><span>{erosion.progress}%</span></div>
@@ -82,12 +72,11 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
             </div>
           )}
         </div>
-        <div className="tombstone-actions">
-          <Tooltip label={flowerStatus === "done" ? `Bisa menabur lagi dalam ${flowerCountdown ?? "..."}` : "Tabur bunga"}>
-            <Button size="sm" variant="secondary" disabled={flowerStatus === "done"} onClick={handleFlower} aria-label={flowerStatus === "login" ? "Masuk untuk menabur bunga" : `Tabur bunga untuk ${makam.judul}`}><>{flowerStatus === "done" ? <Check size={15} aria-hidden="true" /> : <Flower2 size={15} aria-hidden="true" />}<span>{flowerStatus === "done" ? "Besok lagi" : `Tabur bunga · ${makam.bunga}`}</span></></Button>
-          </Tooltip>
-          <Tooltip label={candleMine ? "Matikan lilin" : "Nyalakan lilin"}>
-            <Button size="sm" variant="ghost" onClick={handleCandle} aria-pressed={candleMine}><Flame size={15} aria-hidden="true" /><span>Nyalakan lilin · {candleCount}</span></Button>
+        <div className="tombstone-actions tombstone-actions-single">
+          <Tooltip label={flowerStatus === "done" ? `Bisa menabur lagi dalam ${flowerCountdown ?? "..."}` : flowerStatus === "login" ? "Masuk untuk menabur bunga" : "Tabur bunga"}>
+            <Button size="sm" variant="secondary" disabled={flowerStatus === "done"} onClick={handleFlower} aria-label={flowerStatus === "login" ? "Masuk untuk menabur bunga" : `Tabur bunga untuk ${makam.judul}`}>
+              <>{flowerStatus === "done" ? <Check size={15} aria-hidden="true" /> : <Flower2 size={15} aria-hidden="true" />}<span>{flowerStatus === "done" ? "Besok lagi" : `Tabur bunga · ${makam.bunga}`}</span></>
+            </Button>
           </Tooltip>
         </div>
       </div>

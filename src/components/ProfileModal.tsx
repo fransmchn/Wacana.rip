@@ -14,6 +14,7 @@ import { Tooltip } from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
 import { checkUsernameAvailable, getMyStats, removeAvatar, uploadAvatar, type ProfileStats } from "@/lib/profileService";
 import { getProfileDisplay, resolveAvatar, type ProfileRecord } from "@/lib/profile";
+import { getTierDuka } from "@/lib/utils";
 import { isProfileValid, normalizeUsername, validateProfile } from "@/lib/profileValidation";
 import type { User } from "@supabase/supabase-js";
 
@@ -123,7 +124,7 @@ export function ProfileModal({ user, profile, onClose, onSave, onLogout, profile
     <Input label="Username" id="profile-username" value={username} maxLength={20} onChange={(event) => setUsername(event.target.value)} error={fieldErrors.username ?? validation.username} leading={<span>@</span>} placeholder="contoh: frans_chan" helperText={checkingUsername ? "Memeriksa..." : username && !validation.username ? usernameAvailable === true ? "Username tersedia." : usernameAvailable === false ? "Username sudah dipakai." : undefined : "3-20 karakter: huruf kecil, angka, underscore"} />
     <Textarea label="Epitaf pribadi" id="profile-bio" value={bio} maxLength={120} onChange={(event) => setBio(event.target.value)} error={fieldErrors.bio ?? validation.bio} placeholder="Tulis epitaf untuk dirimu sendiri" helperText={`${bio.length}/120`} />
     <Input label="Email" value={user.email ?? ""} disabled trailing={<Badge tone="neutral">{provider === "google" ? "Google" : "Magic link"}</Badge>} />
-    {(statsLoading || stats) && <div className="profile-stats"><h3>Statistik peziarah</h3>{statsLoading ? <div className="profile-stats-grid"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div> : stats && <div className="profile-stats-grid"><Stat label="Wacana dikubur" value={stats.wacanaDikubur} /><Stat label="Bunga ditabur" value={stats.bungaDitabur} /><Stat label="Lilin dinyalakan" value={stats.lilinDinyalakan} /></div>}</div>}
+    {(statsLoading || stats) && <div className="profile-stats"><h3>Statistik peziarah</h3>{statsLoading ? <div className="profile-stats-grid"><Skeleton className="h-12" /><Skeleton className="h-12" /><Skeleton className="h-12" /></div> : stats && <div className="profile-stats-grid"><Stat label="Wacana dikubur" value={stats.wacanaDikubur} /><Stat label="Bunga ditabur" value={stats.bungaDitabur} /><Stat label="Peringkat Duka" value={getTierDuka(stats.wacanaDikubur, stats.bungaDitabur)} /></div>}</div>}
     <div className="profile-danger"><p>Zona berbahaya</p><Button type="button" variant="ghost" onClick={onLogout}><LogOut size={15} />Keluar</Button><Button type="button" variant="danger" disabled><Trash2 size={15} />Hapus akun</Button><small>Segera hadir</small></div>
     {confirmClose && <div className="profile-confirm" role="alertdialog" aria-label="Konfirmasi perubahan"><p>Buang perubahan?</p><Button type="button" variant="secondary" onClick={onClose}>Buang</Button><Button type="button" onClick={() => setConfirmClose(false)}>Lanjut edit</Button></div>}
   </form></Dialog>;
@@ -135,4 +136,4 @@ function clampOffset(offset: CropOffset, image: HTMLImageElement | null, zoom: n
   return { x: Math.max(-Math.max(0, image.naturalWidth * scale - 220) / 2, Math.min(Math.max(0, image.naturalWidth * scale - 220) / 2, offset.x)), y: Math.max(-Math.max(0, image.naturalHeight * scale - 220) / 2, Math.min(Math.max(0, image.naturalHeight * scale - 220) / 2, offset.y)) };
 }
 
-function Stat({ label, value }: { label: string; value: number }) { return <div><strong>{value.toLocaleString("id-ID")}</strong><span>{label}</span></div>; }
+function Stat({ label, value }: { label: string; value: number | string }) { return <div><strong>{typeof value === "number" ? value.toLocaleString("id-ID") : value}</strong><span>{label}</span></div>; }

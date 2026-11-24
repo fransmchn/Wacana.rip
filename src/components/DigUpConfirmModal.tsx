@@ -36,7 +36,7 @@ export function DigUpConfirmModal({ makam, onClose, onConfirm }: DigUpConfirmMod
       <div className="dig-up-confirm">
         <span className="dig-up-symbol" aria-hidden="true"><TriangleAlert size={26} strokeWidth={1.5} /></span>
         <h3>Yakin ingin menggali kembali wacana ini?</h3>
-        <p><strong>{makam.judul}</strong> akan dihapus dari pemakaman. Bunga, lilin, dan doa yang menyertainya ikut hilang. Tindakan ini tidak bisa dibatalkan.</p>
+        <p><strong>{makam.judul}</strong> akan dihapus dari pemakaman. Bunga dan doa yang menyertainya ikut hilang. Tindakan ini tidak bisa dibatalkan.</p>
       </div>
     </Dialog>
   );

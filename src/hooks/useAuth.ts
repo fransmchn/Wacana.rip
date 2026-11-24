@@ -17,14 +17,19 @@ export function useAuth() {
     }
 
     let active = true;
+    const reportError = (error: unknown) => {
+      const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+      // Supabase mengembalikan ini untuk pengunjung tanpa sesi; bukan kegagalan.
+      if (message && !/auth session missing/i.test(message)) console.error("[wacana-auth] user lookup failed", message || error);
+    };
     void client.auth.getUser().then(({ data, error }) => {
-      if (error) console.error("[wacana-auth] user lookup failed", error.message);
+      if (error) reportError(error);
       if (active) {
         setUser(data.user);
         setLoading(false);
       }
     }).catch((error: unknown) => {
-      console.error("[wacana-auth] user lookup failed", error);
+      reportError(error);
       if (active) {
         setUser(null);
         setLoading(false);

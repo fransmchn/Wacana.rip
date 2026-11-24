@@ -6,11 +6,49 @@ import { IconButton } from "./IconButton";
 
 interface DialogProps { open: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; className?: string; }
 
+/**
+ * Dialog stack: hanya dialog paling atas yang merespons Escape/backdrop, dan
+ * body scroll baru dikembalikan setelah dialog terakhir ditutup.
+ */
+const dialogStack: string[] = [];
+let savedOverflow = "";
+let savedPadding = "";
+
+function pushDialog(id: string): number {
+  if (!dialogStack.includes(id)) dialogStack.push(id);
+  if (dialogStack.length === 1 && typeof document !== "undefined") {
+    savedOverflow = document.body.style.overflow;
+    savedPadding = document.body.style.paddingRight;
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    if (scrollbar > 0) document.body.style.paddingRight = `${scrollbar}px`;
+  }
+  return dialogStack.length;
+}
+
+function popDialog(id: string): number {
+  const index = dialogStack.indexOf(id);
+  if (index !== -1) dialogStack.splice(index, 1);
+  if (dialogStack.length === 0 && typeof document !== "undefined") {
+    document.body.style.overflow = savedOverflow;
+    document.body.style.paddingRight = savedPadding;
+  }
+  return dialogStack.length;
+}
+
+function isTopDialog(id: string): boolean {
+  return dialogStack[dialogStack.length - 1] === id;
+}
+
 export function Dialog({ open, title, onClose, children, footer, className = "" }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const titleId = useId();
   const [bodyState, setBodyState] = useState("");
+  const [depth, setDepth] = useState(1);
+
   useEffect(() => {
     const body = dialogRef.current?.querySelector<HTMLElement>(".ui-dialog-body");
     if (!open || !body) return;
@@ -25,13 +63,17 @@ export function Dialog({ open, title, onClose, children, footer, className = "" 
     window.addEventListener("resize", updateBodyState);
     return () => { body.removeEventListener("scroll", updateBodyState); window.removeEventListener("resize", updateBodyState); };
   }, [open, children]);
+
   useEffect(() => {
     if (!open) return;
+    const id = `${titleId}-dialog`;
     previousFocus.current = document.activeElement as HTMLElement | null;
+    setDepth(pushDialog(id));
     const first = dialogRef.current?.querySelector<HTMLElement>("[data-autofocus], button, input, select, textarea, [tabindex=\"0\"]");
-    first?.focus();
+    window.requestAnimationFrame(() => first?.focus());
     const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { event.preventDefault(); onClose(); return; }
+      if (!isTopDialog(id)) return;
+      if (event.key === "Escape") { event.preventDefault(); onCloseRef.current(); return; }
       if (event.key !== "Tab" || !dialogRef.current) return;
       const focusables = [...dialogRef.current.querySelectorAll<HTMLElement>("button, input, select, textarea, [tabindex=\"0\"]")].filter((item) => !item.hasAttribute("disabled"));
       if (!focusables.length) return;
@@ -40,13 +82,30 @@ export function Dialog({ open, title, onClose, children, footer, className = "" 
       event.preventDefault(); focusables[next].focus();
     };
     document.addEventListener("keydown", handler);
-    const previousOverflow = document.body.style.overflow;
-    const previousPadding = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = "hidden";
-    if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
-    return () => { document.removeEventListener("keydown", handler); document.body.style.overflow = previousOverflow; document.body.style.paddingRight = previousPadding; window.requestAnimationFrame(() => { if (previousFocus.current?.isConnected) previousFocus.current.focus(); else document.querySelector<HTMLElement>("[aria-label=\"Menu profil\"]")?.focus(); }); };
-  }, [open, onClose]);
+    return () => {
+      document.removeEventListener("keydown", handler);
+      const remaining = popDialog(id);
+      if (remaining === 0) {
+        window.requestAnimationFrame(() => {
+          if (previousFocus.current?.isConnected) previousFocus.current.focus();
+          else document.querySelector<HTMLElement>("[aria-label=\"Menu profil\"]")?.focus();
+        });
+      }
+    };
+  }, [open, titleId]);
+
   if (!open) return null;
-  return <div className="ui-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`ui-dialog ${className}`}><div className="ui-dialog-header"><h2 id={titleId}>{title}</h2><IconButton label="Tutup" onClick={onClose}><X size={18} /></IconButton></div><div className={`ui-dialog-body ${bodyState}`}>{children}</div>{footer && <div className="ui-dialog-footer">{footer}</div>}</div></div>;
+  return (
+    <div
+      className="ui-dialog-backdrop"
+      style={{ zIndex: 50 + depth * 10 }}
+      onMouseDown={(event) => { if (event.target === event.currentTarget && isTopDialog(`${titleId}-dialog`)) onCloseRef.current(); }}
+    >
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={`ui-dialog ${className}`}>
+        <div className="ui-dialog-header"><h2 id={titleId}>{title}</h2><IconButton label="Tutup" onClick={onClose}><X size={18} /></IconButton></div>
+        <div className={`ui-dialog-body ${bodyState}`}>{children}</div>
+        {footer && <div className="ui-dialog-footer">{footer}</div>}
+      </div>
+    </div>
+  );
 }

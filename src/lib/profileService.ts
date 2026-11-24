@@ -3,7 +3,7 @@ import type { ProfileRecord } from "@/lib/profile";
 import { normalizeUsername } from "@/lib/profileValidation";
 
 export interface ProfilePatch { display_name?: string; username?: string | null; bio?: string | null; avatar_url?: string | null; }
-export interface ProfileStats { wacanaDikubur: number; bungaDitabur: number; lilinDinyalakan: number; }
+export interface ProfileStats { wacanaDikubur: number; bungaDitabur: number; }
 export type ProfileField = "display_name" | "username" | "bio";
 
 export class ProfileServiceError extends Error {
@@ -77,5 +77,5 @@ export async function getMyStats(): Promise<ProfileStats> {
   const result = await client().rpc("my_profile_stats");
   if (result.error) throw friendlyError(result.error, "Statistik profil gagal dimuat.");
   const row = Array.isArray(result.data) ? result.data[0] : result.data;
-  return { wacanaDikubur: Number(row?.wacana_dikubur ?? 0), bungaDitabur: Number(row?.bunga_ditabur ?? 0), lilinDinyalakan: Number(row?.lilin_dinyalakan ?? 0) };
+  return { wacanaDikubur: Number(row?.wacana_dikubur ?? 0), bungaDitabur: Number(row?.bunga_ditabur ?? 0) };
 }

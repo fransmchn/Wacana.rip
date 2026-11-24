@@ -7,7 +7,7 @@ import { Chip } from "@/components/ui/Chip";
 import { IconButton } from "@/components/ui/IconButton";
 import { Input } from "@/components/ui/Input";
 
-export type SortKey = "terbaru" | "terlama" | "bunga" | "lilin" | "pendek";
+export type SortKey = "terbaru" | "terlama" | "bunga" | "pendek";
 
 const categories: { value: "semua" | Kategori; label: string }[] = [
   { value: "semua", label: "Semua" },

@@ -3,32 +3,57 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckoutModal } from "@/components/CheckoutModal";
 import { useToast } from "@/components/ui/Toast";
-import { getVipIds, isVipMakam, upgradeToVip, type PaymentMethod } from "@/lib/vipService";
-import type { Makam } from "@/types/graveyard";
+import { getVipIds, isVipMakam, upgradeToVip, VIP_PRICE, type CreateCheckoutParams, type PaymentMethod, type VipUpgradeResult } from "@/lib/payment";
+import { resolveTheme } from "@/lib/themeService";
+import type { Makam, NisanTema } from "@/types/graveyard";
+
+interface UpgradeOptions {
+  selectedTheme?: NisanTema;
+  userId?: string;
+  onPaid?: (result: VipUpgradeResult) => void | Promise<void>;
+}
 
 interface VipUpgradeContextValue {
   vipIds: string[];
   isVip: (makam: Makam) => boolean;
-  requestUpgrade: (makam: Makam) => void;
+  requestUpgrade: (makam: Makam, options?: UpgradeOptions) => void;
 }
+
+interface CheckoutState { params: CreateCheckoutParams; onPaid?: UpgradeOptions["onPaid"]; }
 
 const VipUpgradeContext = createContext<VipUpgradeContextValue | null>(null);
 
 export function VipUpgradeProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [vipIds, setVipIds] = useState<string[]>([]);
-  const [checkout, setCheckout] = useState<Makam | null>(null);
+  const [checkout, setCheckout] = useState<CheckoutState | null>(null);
 
   useEffect(() => { setVipIds(getVipIds()); }, []);
 
-  const isVip = useCallback((makam: Makam) => isVipMakam(makam, vipIds), [vipIds]);
-  const requestUpgrade = useCallback((makam: Makam) => setCheckout(makam), []);
+  const isVip = useCallback((makam: Makam) => {
+    const withTheme = { ...makam, tema: resolveTheme(makam) };
+    return isVipMakam(withTheme, vipIds);
+  }, [vipIds]);
+
+  const requestUpgrade = useCallback((makam: Makam, options: UpgradeOptions = {}) => {
+    setCheckout({
+      params: {
+        graveId: makam.id,
+        graveTitle: makam.judul,
+        selectedTheme: options.selectedTheme ?? resolveTheme(makam),
+        amount: VIP_PRICE,
+        userId: options.userId,
+      },
+      onPaid: options.onPaid,
+    });
+  }, []);
 
   const confirm = useCallback(async (method: PaymentMethod) => {
     if (!checkout) return;
     try {
-      const result = await upgradeToVip(checkout.id, method);
-      setVipIds(result.ids);
+      const result = await upgradeToVip({ ...checkout.params, method }, method);
+      await checkout.onPaid?.(result);
+      setVipIds(getVipIds());
       setCheckout(null);
       toast("Makam Abadi aktif. Erosi dihentikan.", "success");
     } catch (reason) {
@@ -42,7 +67,7 @@ export function VipUpgradeProvider({ children }: { children: ReactNode }) {
   return (
     <VipUpgradeContext.Provider value={value}>
       {children}
-      {checkout && <CheckoutModal grave={checkout} onClose={() => setCheckout(null)} onConfirm={confirm} />}
+      {checkout && <CheckoutModal params={checkout.params} onClose={() => setCheckout(null)} onConfirm={confirm} />}
     </VipUpgradeContext.Provider>
   );
 }

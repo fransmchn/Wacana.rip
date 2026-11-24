@@ -8,8 +8,8 @@ import { LoginModal } from "@/components/LoginModal";
 import { ProfileModal } from "@/components/ProfileModal";
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { BuryModal } from "@/components/BuryModal";
-import { DeathCertificateModal } from "@/components/DeathCertificateModal";
 import { GraveDetailModal } from "@/components/GraveDetailModal";
+import { StoryStudioModal } from "@/components/StoryStudioModal";
 import { FilterBar, type SortKey } from "@/components/FilterBar";
 import { Header } from "@/components/Header";
 import { TombstoneGrid } from "@/components/TombstoneGrid";
@@ -17,22 +17,25 @@ import { Footer } from "@/components/Footer";
 import { Select } from "@/components/ui/Select";
 import { useGraveyard } from "@/hooks/useGraveyard";
 import { usePointerGlow } from "@/hooks/usePointerGlow";
-import type { Kategori, Makam } from "@/types/graveyard";
+import { useClientNow } from "@/hooks/useClientNow";
+import type { CreateMakamInput, Kategori, Makam } from "@/types/graveyard";
 import { getDurasiHari, getErosionInfo, type ErosionInfo } from "@/lib/utils";
+import { createDraftGrave, replaceVipId } from "@/lib/payment";
+import { resolveTheme } from "@/lib/themeService";
 import { useWibCountdown } from "@/components/useWibCountdown";
 import { Button } from "@/components/ui/Button";
 import { HeroIllustration } from "@/components/HeroIllustration";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/components/ui/Toast";
 import { useVipUpgrade } from "@/components/VipUpgradeProvider";
-import { downloadAktaPng } from "@/lib/certificateCanvas";
 
 export default function Home() {
-  const { makam, statistik, loading, error, bunga, lilin, komentar, kuburkan, bungaStatus, lilinSaya, refresh, refreshPersonalStatus } = useGraveyard();
+  const { makam, statistik, loading, error, bunga, komentar, kuburkan, bungaStatus, refresh, refreshPersonalStatus } = useGraveyard();
   const { user, configured, signOut } = useAuth();
   const { toast } = useToast();
-  const { isVip, requestUpgrade } = useVipUpgrade();
+  const { vipIds, isVip, requestUpgrade } = useVipUpgrade();
   const router = useRouter();
+  const now = useClientNow();
   const { profile: profileRecord, display: profile, mutate: mutateProfile } = useProfile(user);
   const [loginOpen, setLoginOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -42,7 +45,7 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Makam | null>(null);
   const [buryOpen, setBuryOpen] = useState(false);
-  const [certificate, setCertificate] = useState<Makam | null>(null);
+  const [storyTarget, setStoryTarget] = useState<Makam | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const heroCtaRef = useRef<HTMLButtonElement>(null);
   const graveyardRef = usePointerGlow<HTMLDivElement>("element");
@@ -50,16 +53,46 @@ export default function Home() {
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   useEffect(() => { if (!heroCtaRef.current || !("IntersectionObserver" in window)) { setHeroCtaVisible(false); return; } const observer = new IntersectionObserver(([entry]) => setHeroCtaVisible(entry.isIntersecting), { threshold: .1 }); observer.observe(heroCtaRef.current); return () => observer.disconnect(); }, []);
   const requireLogin = (action: () => void) => { if (!user) { setLoginOpen(true); return; } action(); };
-  const erosion = (item: Makam): ErosionInfo => getErosionInfo(item);
-  // Status VIP & checkout dipusatkan di VipUpgradeProvider; komponen hanya meminta.
-  const upgrade = (item: Makam) => requireLogin(() => requestUpgrade(item));
-  const runRitual = (action: () => Promise<void>, successMessage: string) => { void action().then(() => toast(successMessage, "success")).catch((reason) => toast(reason instanceof Error ? reason.message : "Ritual belum bisa dilakukan.", "danger")); };
+  const erosion = (item: Makam): ErosionInfo => getErosionInfo(item, now);
+  const vipUnlocked = vipIds.length > 0 || makam.some((item) => item.userId === user?.id && isVip(item));
+
+  const upgrade = (item: Makam) => requireLogin(() => requestUpgrade(item, {
+    userId: user?.id,
+    onPaid: async () => { await refresh(); },
+  }));
+
+  function afterCreate(newMakam: Makam) {
+    setBuryOpen(false);
+    setHighlightedId(newMakam.id);
+    window.setTimeout(() => setHighlightedId(null), 1900);
+    window.setTimeout(() => setStoryTarget(newMakam), 900);
+  }
+
+  const vipThemeRequest = (input: CreateMakamInput) => requireLogin(() => {
+    const draft = createDraftGrave(input);
+    requestUpgrade(draft, {
+      selectedTheme: input.tema,
+      userId: user?.id,
+      onPaid: async (result) => {
+        const created = await kuburkan({ ...input, vip: true });
+        replaceVipId(result.graveId, created.id);
+        await refresh();
+        afterCreate(created);
+      },
+    });
+  });
+
+  const runRitual = (action: () => Promise<void>) => {
+    void action()
+      .then(() => toast("Bunga ditaburkan ke makam ini", "success"))
+      .catch((reason) => toast(reason instanceof Error ? reason.message : "Ritual belum bisa dilakukan.", "danger"));
+  };
+
   const filtered = useMemo(() => makam
     .filter((item) => category === "semua" || item.kategori === category)
     .filter((item) => `${item.judul} ${item.penyebab}`.toLowerCase().includes(search.toLowerCase().trim()))
     .sort((a, b) => {
       if (sort === "bunga") return b.bunga - a.bunga;
-      if (sort === "lilin") return (b.lilinCount ?? (b.lilin ? 1 : 0)) - (a.lilinCount ?? (a.lilin ? 1 : 0));
       if (sort === "pendek") return getDurasiHari(a.tanggalMulai, a.tanggalMenyerah) - getDurasiHari(b.tanggalMulai, b.tanggalMenyerah);
       if (sort === "terlama") return new Date(a.tanggalMenyerah).getTime() - new Date(b.tanggalMenyerah).getTime();
       return new Date(b.tanggalMenyerah).getTime() - new Date(a.tanggalMenyerah).getTime();
@@ -72,6 +105,7 @@ export default function Home() {
   const flowerCountdown = (id: string) => { const target = bungaStatus[id]?.berlakuHingga; return target ? countdowns[target] : undefined; };
   const hasFilter = category !== "semua" || search.trim().length > 0;
   const resetFilters = () => { setCategory("semua"); setSearchInput(""); setSort("terbaru"); };
+  const openStory = (item: Makam) => setStoryTarget(makam.find((entry) => entry.id === item.id) ?? item);
 
   return (
     <main id="main" className="relative min-h-screen overflow-hidden pb-20">
@@ -97,12 +131,12 @@ export default function Home() {
           <div>
             <p className="eyebrow">Koleksi kenangan</p>
             <h2 id="graveyard-title" className="section-title">Makam terbaru</h2>
-            <p className="section-whisper">Jelajahi petak demi petak. Arahkan cahaya, nyalakan lilin, taburkan bunga.</p>
+            <p className="section-whisper">Jelajahi petak demi petak. Arahkan cahaya, taburkan bunga, dan baca kisahnya.</p>
           </div>
           <div className="section-tools">
             <p className="result-count" aria-live="polite">{filtered.length} makam</p>
             <Select aria-label="Urutkan makam" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
-              <option value="terbaru">Terbaru gugur</option><option value="terlama">Terlama</option><option value="bunga">Paling banyak bunga</option><option value="lilin">Paling banyak lilin</option><option value="pendek">Umur terpendek</option>
+              <option value="terbaru">Terbaru gugur</option><option value="terlama">Terlama</option><option value="bunga">Paling banyak bunga</option><option value="pendek">Umur terpendek</option>
             </Select>
           </div>
         </div>
@@ -111,12 +145,12 @@ export default function Home() {
         <div ref={graveyardRef} className="graveyard-ground">
           <div className="graveyard-horizon" aria-hidden="true" />
           <div className="graveyard-flashlight" aria-hidden="true" />
-          <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} candleMine={(id) => lilinSaya.has(id)} isVip={isVip} erosion={erosion} />
+          <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} isVip={isVip} erosion={erosion} />
         </div>
       </section>
-      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} candleMine={lilinSaya.has(selected.id)} vip={isVip(selected)} erosion={erosion(selected)} onUpgrade={upgrade} onDownloadAkta={downloadAktaPng} />}
-      {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={(newMakam) => { setBuryOpen(false); setHighlightedId(newMakam.id); window.setTimeout(() => setHighlightedId(null), 1900); window.setTimeout(() => setCertificate(newMakam), 900); }} />}
-      {certificate && <DeathCertificateModal makam={certificate} onClose={() => setCertificate(null)} />}
+      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} vip={isVip(selected)} erosion={erosion(selected)} onUpgrade={upgrade} onOpenStory={openStory} />}
+      {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={afterCreate} vipUnlocked={vipUnlocked} onVipTheme={vipThemeRequest} />}
+      {storyTarget && <StoryStudioModal makam={makam.find((item) => item.id === storyTarget.id) ?? storyTarget} vip={isVip(storyTarget)} theme={resolveTheme(storyTarget)} onClose={() => setStoryTarget(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       {profileOpen && user && <ProfileModal user={user} profile={profileRecord} onClose={() => setProfileOpen(false)} onSave={async (patch) => { await mutateProfile(patch); }} onLogout={() => void signOut()} />}
       <Footer />

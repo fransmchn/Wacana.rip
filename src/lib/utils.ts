@@ -1,4 +1,4 @@
-import type { Makam, TipeNisan } from "@/types/graveyard";
+import type { Makam } from "@/types/graveyard";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -11,13 +11,6 @@ export function getDurasiHari(tanggalMulai: string, tanggalMenyerah: string): nu
 export function getLabelDurasi(durasiHari: number): string {
   if (durasiHari === 0) return "kurang dari sehari";
   return `${durasiHari} ${durasiHari === 1 ? "hari" : "hari"}`;
-}
-
-export function getTipeNisan(tanggalMulai: string, tanggalMenyerah: string): TipeNisan {
-  const durasi = getDurasiHari(tanggalMulai, tanggalMenyerah);
-  if (durasi < 3) return "kayu";
-  if (durasi <= 90) return "granit";
-  return "marmer";
 }
 
 export function formatTanggal(value: string): string {
@@ -36,12 +29,31 @@ export function formatRupiah(value: number): string {
   }).format(value);
 }
 
+/** Versi lengkap dipakai berdampingan dengan versi ringkas agar tidak selisih format. */
+export function formatRupiahLengkap(value: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 export function formatCompactRupiah(value: number): string {
   const absolute = Math.abs(value);
   if (absolute >= 1_000_000_000) return `Rp ${(value / 1_000_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`;
   if (absolute >= 1_000_000) return `Rp ${(value / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} jt`;
   if (absolute >= 1_000) return `Rp ${(value / 1_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} rb`;
-  return formatRupiah(value);
+  return formatRupiahLengkap(value);
+}
+
+/** Tier duka turunan dari makam + bunga, menggantikan metrik lilin. */
+export function getTierDuka(jumlahMakam: number, jumlahBunga: number, jumlahVip = 0): string {
+  const skor = jumlahMakam * 3 + jumlahBunga + jumlahVip * 12;
+  if (skor >= 120) return "Legenda TPU";
+  if (skor >= 60) return "Penjaga Duka";
+  if (skor >= 24) return "Pelatuk Setia";
+  if (skor > 0) return "Pendatang Baru";
+  return "Belum Berduka";
 }
 
 export function formatKerugian(makam: Pick<Makam, "kerugianRupiah" | "kerugianJam">): string {
@@ -62,8 +74,10 @@ export interface ErosionInfo {
  * bisa berusia berbulan-bulan, siklus dipakai supaya indikator tetap
  * bercerita (dan tidak pernah menampilkan "0 hari").
  */
-export function getErosionInfo(makam: Pick<Makam, "createdAt">): ErosionInfo {
-  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(makam.createdAt).getTime()) / DAY_MS));
+export function getErosionInfo(makam: Pick<Makam, "createdAt">, now?: number | null): ErosionInfo {
+  // Sebelum hydration selesai, pakai waktu dibuat supaya server & klien identik.
+  const reference = typeof now === "number" && Number.isFinite(now) ? now : new Date(makam.createdAt).getTime();
+  const elapsed = Math.max(0, Math.floor((reference - new Date(makam.createdAt).getTime()) / DAY_MS));
   const daysLeft = 7 - (elapsed % 7);
   return {
     daysLeft,
