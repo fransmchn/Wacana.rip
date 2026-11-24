@@ -1,6 +1,5 @@
 "use client";
 
-import { Flower2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect } from "react";
 
@@ -9,23 +8,25 @@ interface FlowerBurstProps {
   onDone: () => void;
 }
 
-const petals = [
-  { x: -34, y: 38, rotate: -30 },
-  { x: -20, y: 58, rotate: 22 },
-  { x: 0, y: 68, rotate: -10 },
-  { x: 20, y: 58, rotate: 35 },
-  { x: 34, y: 34, rotate: 12 },
-  { x: -28, y: 18, rotate: -45 },
-  { x: 12, y: 28, rotate: 60 },
-  { x: 0, y: 12, rotate: 0 },
-];
+const petals = Array.from({ length: 16 }, (_, index) => {
+  const spread = ((index * 137) % 100) / 100 - 0.5;
+  return {
+    x: spread * 150,
+    drift: spread * 190 + 24,
+    delay: (index % 6) * 0.075,
+    duration: 1.35 + (index % 5) * 0.16,
+    rotate: (index % 2 ? 1 : -1) * (180 + (index * 37) % 320),
+    scale: 0.72 + ((index * 29) % 60) / 100,
+    tone: index % 3,
+  };
+});
 
 export function FlowerBurst({ active, onDone }: FlowerBurstProps) {
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!active) return;
-    const timer = window.setTimeout(onDone, reducedMotion ? 500 : 900);
+    const timer = window.setTimeout(onDone, reducedMotion ? 600 : 1900);
     return () => window.clearTimeout(timer);
   }, [active, onDone, reducedMotion]);
 
@@ -37,15 +38,19 @@ export function FlowerBurst({ active, onDone }: FlowerBurstProps) {
   return (
     <span className="flower-burst" aria-hidden="true">
       {petals.map((petal, index) => (
-        <motion.span
+        <motion.i
           key={index}
-          initial={{ opacity: 0, x: 0, y: 12, scale: 0.4, rotate: 0 }}
-          animate={{ opacity: [0, 1, 0], x: petal.x, y: petal.y, scale: [0.4, 1, 0.7], rotate: petal.rotate }}
-          transition={{ duration: 0.8, delay: index * 0.025, ease: "easeOut" }}
-          className="flower-petal"
-        >
-          <Flower2 size={14} strokeWidth={1.8} />
-        </motion.span>
+          className={`digital-petal digital-petal-${petal.tone}`}
+          style={{ scale: petal.scale }}
+          initial={{ opacity: 0, x: petal.x, y: -70, rotate: 0 }}
+          animate={{
+            opacity: [0, 1, 1, 0],
+            x: [petal.x, petal.x + petal.drift * 0.4, petal.drift],
+            y: [-70, -10, 64, 140],
+            rotate: [0, petal.rotate],
+          }}
+          transition={{ duration: petal.duration, delay: petal.delay, ease: [0.22, 0.61, 0.36, 1], times: [0, 0.35, 0.7, 1] }}
+        />
       ))}
     </span>
   );

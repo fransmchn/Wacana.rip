@@ -1,8 +1,74 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, useSpring } from "framer-motion";
+import { Sparkles } from "lucide-react";
+import { StatsBanner } from "@/components/StatsBanner";
+import type { Statistik } from "@/types/graveyard";
 
-export function HeroIllustration() {
+const dust = Array.from({ length: 22 }, (_, index) => ({
+  left: `${6 + ((index * 37) % 88)}%`,
+  top: `${10 + ((index * 53) % 78)}%`,
+  size: index % 4 === 0 ? 3 : index % 3 === 0 ? 2 : 1,
+  delay: (index % 8) * -0.9,
+  duration: 4.5 + (index % 5) * 1.3,
+  drift: ((index * 19) % 30) - 15,
+}));
+
+export function HeroIllustration({ statistik }: { statistik: Statistik }) {
   const reducedMotion = useReducedMotion();
-  return <div className="hero-illustration" aria-hidden="true"><svg viewBox="0 0 420 240" role="presentation" className="hero-illustration-svg"><defs><radialGradient id="hero-glow"><stop offset="0" stopColor="var(--gold)" stopOpacity=".55" /><stop offset="1" stopColor="var(--gold)" stopOpacity="0" /></radialGradient><linearGradient id="hero-stone" x1="0" x2="1"><stop stopColor="var(--surface-2)" /><stop offset="1" stopColor="var(--night-soft)" /></linearGradient></defs><ellipse cx="295" cy="92" rx="108" ry="100" fill="url(#hero-glow)" /><path d="M50 205c55-20 94-18 145-9 62 11 119 8 190-7" fill="none" stroke="var(--gold)" strokeOpacity=".35" strokeWidth="2" /><path d="M112 197V96c0-38 27-61 62-61s62 23 62 61v101Z" fill="url(#hero-stone)" stroke="var(--gold)" strokeOpacity=".55" strokeWidth="2" /><path d="M134 197v-98c0-26 17-42 40-42s40 16 40 42v98" fill="none" stroke="var(--border-subtle)" /><path d="M174 72v22m-11-11h22" stroke="var(--gold)" strokeOpacity=".8" strokeWidth="3" strokeLinecap="round" /><path d="M295 190v-53h19v53" fill="var(--surface-2)" stroke="var(--gold)" strokeOpacity=".45" /><path d="M292 137h25l-4-10h-17Z" fill="var(--gold)" fillOpacity=".8" /><motion.circle cx="304" cy="112" r="12" fill="var(--gold)" fillOpacity=".35" animate={reducedMotion ? undefined : { opacity: [.85, 1, .85] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }} /><circle cx="304" cy="112" r="4" fill="var(--gold)" /><path d="M72 204l-8-12m29 12-4-13m245 13 7-13m17 13 8-12" stroke="var(--success)" strokeOpacity=".55" strokeWidth="2" /></svg></div>;
+  const rotateX = useSpring(0, { stiffness: 120, damping: 22 });
+  const rotateY = useSpring(0, { stiffness: 120, damping: 22 });
+
+  function handleMove(event: React.PointerEvent<HTMLDivElement>) {
+    if (reducedMotion || event.pointerType !== "mouse") return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const nx = (event.clientX - rect.left) / rect.width - 0.5;
+    const ny = (event.clientY - rect.top) / rect.height - 0.5;
+    rotateY.set(nx * 14);
+    rotateX.set(-ny * 10);
+  }
+
+  function handleLeave() {
+    rotateX.set(0);
+    rotateY.set(0);
+  }
+
+  return (
+    <div className="altar-column">
+      <div className="altar-scene" onPointerMove={handleMove} onPointerLeave={handleLeave}>
+        <div className="altar-aura" aria-hidden="true" />
+        <div className="altar-dust" aria-hidden="true">
+          {dust.map((particle, index) => (
+            <motion.i
+              key={index}
+              className="dust-mote"
+              style={{ left: particle.left, top: particle.top, width: particle.size, height: particle.size }}
+              animate={reducedMotion ? undefined : { y: [8, -48], x: [0, particle.drift], opacity: [0, 0.75, 0] }}
+              transition={{ duration: particle.duration, delay: particle.delay, repeat: Infinity, ease: "linear" }}
+            />
+          ))}
+        </div>
+
+        <motion.div className="altar-monument" style={reducedMotion ? undefined : { rotateX, rotateY, transformPerspective: 900 }}>
+          <div className="altar-ground-shadow" aria-hidden="true" />
+          <div className="altar-stone" aria-hidden="true">
+            <div className="altar-stone-face">
+              <Sparkles className="altar-crest" size={22} strokeWidth={1.4} />
+              <p className="altar-kicker">T P U · W A C A N A</p>
+              <p className="altar-rip">RIP</p>
+              <span className="altar-rule" />
+              <p className="altar-name">Wacana</p>
+              <p className="altar-year">EST. 2026</p>
+            </div>
+          </div>
+          <div className="altar-plinth altar-plinth-top" aria-hidden="true" />
+          <div className="altar-plinth altar-plinth-mid" aria-hidden="true" />
+          <div className="altar-plinth altar-plinth-base" aria-hidden="true" />
+          <div className="altar-candle altar-candle-left" aria-hidden="true"><span className="altar-flame" /></div>
+          <div className="altar-candle altar-candle-right" aria-hidden="true"><span className="altar-flame" /></div>
+        </motion.div>
+      </div>
+      <StatsBanner statistik={statistik} />
+    </div>
+  );
 }

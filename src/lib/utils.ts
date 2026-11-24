@@ -51,6 +51,27 @@ export function formatKerugian(makam: Pick<Makam, "kerugianRupiah" | "kerugianJa
   return values.join(" · ") || "Belum dihitung";
 }
 
+export interface ErosionInfo {
+  daysLeft: number;
+  progress: number;
+  label: string;
+}
+
+/**
+ * Makam gratis hanya bertahan 7 hari sebelum terkubur. Karena data seed
+ * bisa berusia berbulan-bulan, siklus dipakai supaya indikator tetap
+ * bercerita (dan tidak pernah menampilkan "0 hari").
+ */
+export function getErosionInfo(makam: Pick<Makam, "createdAt">): ErosionInfo {
+  const elapsed = Math.max(0, Math.floor((Date.now() - new Date(makam.createdAt).getTime()) / DAY_MS));
+  const daysLeft = 7 - (elapsed % 7);
+  return {
+    daysLeft,
+    progress: Math.round(((7 - daysLeft) / 7) * 100),
+    label: `Terkubur dalam ${daysLeft} hari`,
+  };
+}
+
 export function createId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;

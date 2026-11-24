@@ -26,6 +26,8 @@ export interface Makam {
   bunga: number;
   lilin: boolean;
   lilinCount?: number;
+  /** Makam Abadi VIP — dikunci dari erosi dan memakai monumen obsidian. */
+  vip?: boolean;
   komentar: Komentar[];
   createdAt: string;
 }

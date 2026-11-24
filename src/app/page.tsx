@@ -11,13 +11,12 @@ import { DeathCertificateModal } from "@/components/DeathCertificateModal";
 import { GraveDetailModal } from "@/components/GraveDetailModal";
 import { FilterBar, type SortKey } from "@/components/FilterBar";
 import { Header } from "@/components/Header";
-import { StatsBanner } from "@/components/StatsBanner";
 import { TombstoneGrid } from "@/components/TombstoneGrid";
 import { Footer } from "@/components/Footer";
 import { Select } from "@/components/ui/Select";
 import { useGraveyard } from "@/hooks/useGraveyard";
 import type { Kategori, Makam } from "@/types/graveyard";
-import { getDurasiHari } from "@/lib/utils";
+import { getDurasiHari, getErosionInfo, type ErosionInfo } from "@/lib/utils";
 import { useWibCountdown } from "@/components/useWibCountdown";
 import { Button } from "@/components/ui/Button";
 import { HeroIllustration } from "@/components/HeroIllustration";
@@ -39,11 +38,28 @@ export default function Home() {
   const [buryOpen, setBuryOpen] = useState(false);
   const [certificate, setCertificate] = useState<Makam | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [vipIds, setVipIds] = useState<Set<string>>(new Set());
   const heroCtaRef = useRef<HTMLButtonElement>(null);
   useEffect(() => { const timer = window.setTimeout(() => setSearch(searchInput), 250); return () => window.clearTimeout(timer); }, [searchInput]);
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   useEffect(() => { if (!heroCtaRef.current || !("IntersectionObserver" in window)) { setHeroCtaVisible(false); return; } const observer = new IntersectionObserver(([entry]) => setHeroCtaVisible(entry.isIntersecting), { threshold: .1 }); observer.observe(heroCtaRef.current); return () => observer.disconnect(); }, []);
   const requireLogin = (action: () => void) => { if (!user) { setLoginOpen(true); return; } action(); };
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("wacana-rip:vip");
+      if (stored) setVipIds(new Set(JSON.parse(stored) as string[]));
+    } catch { /*VIP lokal opsional; abaikan storage yang rusak.*/ }
+  }, []);
+  // Makam dengan bunga banyak tampil sebagai monumen Abadi di mode demo,
+  // selain penanda vip dari data dan upgrade yang tersimpan lokal.
+  const isVip = (item: Makam) => Boolean(item.vip) || vipIds.has(item.id) || item.bunga >= 20;
+  const erosion = (item: Makam): ErosionInfo => getErosionInfo(item);
+  const upgrade = (item: Makam) => requireLogin(() => {
+    const next = new Set(vipIds).add(item.id);
+    setVipIds(next);
+    try { window.localStorage.setItem("wacana-rip:vip", JSON.stringify([...next])); } catch { /*tetap aktif untuk sesi ini*/ }
+    toast("Makam Abadi aktif. Erosi dihentikan.", "success");
+  });
   const runRitual = (action: () => Promise<void>, successMessage: string) => { void action().then(() => toast(successMessage, "success")).catch((reason) => toast(reason instanceof Error ? reason.message : "Ritual belum bisa dilakukan.", "danger")); };
   const filtered = useMemo(() => makam
     .filter((item) => category === "semua" || item.kategori === category)
@@ -80,18 +96,15 @@ export default function Home() {
               <Button size="lg" variant="secondary" onClick={() => document.getElementById("pemakaman")?.scrollIntoView({ behavior: "smooth" })}><ArrowDown size={18} aria-hidden="true" />Lihat pemakaman</Button>
             </div>
           </div>
-          <HeroIllustration />
+          <HeroIllustration statistik={statistik} />
         </div>
-      </section>
-      <section className="container-shell" aria-labelledby="stats-title">
-        <h2 id="stats-title" className="sr-only">Statistik TPU Wacana</h2>
-        <StatsBanner statistik={statistik} />
       </section>
       <section id="pemakaman" className="container-shell pt-16 sm:pt-24" aria-labelledby="graveyard-title">
         <div className="section-heading">
           <div>
             <p className="eyebrow">Koleksi kenangan</p>
             <h2 id="graveyard-title" className="section-title">Makam terbaru</h2>
+            <p className="section-whisper">Jelajahi petak demi petak. Arahkan cahaya, nyalakan lilin, taburkan bunga.</p>
           </div>
           <div className="section-tools">
             <p className="result-count" aria-live="polite">{filtered.length} makam</p>
@@ -102,11 +115,12 @@ export default function Home() {
         </div>
         <FilterBar category={category} search={searchInput} onCategory={setCategory} onSearch={setSearchInput} />
         <p className="sr-only" aria-live="polite">{filtered.length} makam ditemukan</p>
-        <div className="graveyard-grid-wrap">
-          <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} candleMine={(id) => lilinSaya.has(id)} />
+        <div className="graveyard-ground">
+          <div className="graveyard-horizon" aria-hidden="true" />
+          <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} candleMine={(id) => lilinSaya.has(id)} isVip={isVip} erosion={erosion} />
         </div>
       </section>
-      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} candleMine={lilinSaya.has(selected.id)} />}
+      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} candleMine={lilinSaya.has(selected.id)} vip={isVip(selected)} erosion={erosion(selected)} onUpgrade={upgrade} />}
       {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={(newMakam) => { setBuryOpen(false); setHighlightedId(newMakam.id); window.setTimeout(() => setHighlightedId(null), 1900); window.setTimeout(() => setCertificate(newMakam), 900); }} />}
       {certificate && <DeathCertificateModal makam={certificate} onClose={() => setCertificate(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}

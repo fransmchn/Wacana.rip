@@ -23,12 +23,26 @@ export function AmbientBackground() {
     setFireflies(createFireflies(window.innerWidth < 640 ? 8 : 20));
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const move = (event: PointerEvent) => {
+      root.style.setProperty("--cursor-x", `${event.clientX}px`);
+      root.style.setProperty("--cursor-y", `${event.clientY}px`);
+    };
+    window.addEventListener("pointermove", move, { passive: true });
+    return () => window.removeEventListener("pointermove", move);
+  }, []);
+
   return (
     <div aria-hidden="true">
       <div className="noise" />
+      <div className="fog-bank fog-bank-low" />
+      <div className="fog-bank fog-bank-high" />
       <div className="mist" />
       <div className="mist mist-two" />
       {!reducedMotion && <div className="fireflies">{fireflies.map((firefly, index) => <motion.i key={index} className="firefly" style={{ left: firefly.left, top: firefly.top, width: firefly.size, height: firefly.size }} animate={{ opacity: [0.18, 0.8, 0.18], scale: [0.8, 1.25, 0.8] }} transition={{ duration: firefly.duration, delay: firefly.delay, repeat: Infinity, ease: "easeInOut" }} />)}</div>}
+      <div className="cursor-light" />
+      <div className="cursor-dark" />
     </div>
   );
 }
