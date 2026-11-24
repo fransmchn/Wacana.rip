@@ -58,6 +58,7 @@ export default function ProfilePage() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [buryOpen, setBuryOpen] = useState(false);
+  const [burySession, setBurySession] = useState(0);
   const [editTarget, setEditTarget] = useState<Makam | null>(null);
   const [digTarget, setDigTarget] = useState<Makam | null>(null);
   const [storyTarget, setStoryTarget] = useState<Makam | null>(null);
@@ -96,6 +97,7 @@ export default function ProfilePage() {
 
   const vipUnlocked = vipIds.length > 0 || graves.some((grave) => isVip(grave));
   const requireLogin = (action: () => void) => { if (needLogin) { setLoginOpen(true); return; } action(); };
+  const openBury = () => requireLogin(() => { setBurySession((session) => session + 1); setBuryOpen(true); });
   const erosion = (grave: Makam) => getErosionInfo(grave, now);
 
   async function persistGrave(input: CreateMakamInput, options: { silent?: boolean; vip?: boolean } = {}): Promise<Makam> {
@@ -163,7 +165,7 @@ export default function ProfilePage() {
   return (
     <main id="main" className="profile-page relative min-h-screen overflow-hidden pb-20">
       <AmbientBackground />
-      <Header onBury={() => requireLogin(() => setBuryOpen(true))} profile={user ? profile : undefined} onLogin={() => setLoginOpen(true)} onProfile={() => router.push("/profile")} onEditProfile={() => setProfileOpen(true)} onLogout={() => void signOut()} />
+      <Header onBury={openBury} profile={user ? profile : undefined} onLogin={() => setLoginOpen(true)} onProfile={() => router.push("/profile")} onEditProfile={() => setProfileOpen(true)} onLogout={() => void signOut()} />
 
       <div className="container-shell profile-shell">
         <Link href="/" className="profile-back"><ArrowLeft size={15} aria-hidden="true" />Kembali ke pemakaman</Link>
@@ -175,7 +177,7 @@ export default function ProfilePage() {
             <p className="section-whisper">Semua wacana yang pernah kamu kubur, berikut keadaan nisannya hari ini.</p>
           </div>
           <div className="profile-hero-actions">
-            {needLogin ? <Button onClick={() => setLoginOpen(true)}>Masuk untuk mengelola</Button> : <Button onClick={() => setBuryOpen(true)}><Plus size={17} aria-hidden="true" />Kuburkan wacana</Button>}
+            {needLogin ? <Button onClick={() => setLoginOpen(true)}>Masuk untuk mengelola</Button> : <Button onClick={openBury}><Plus size={17} aria-hidden="true" />Kuburkan wacana</Button>}
           </div>
         </section>
 
@@ -246,7 +248,7 @@ export default function ProfilePage() {
       <Footer />
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       {profileOpen && user && <ProfileModal user={user} profile={profileRecord} onClose={() => setProfileOpen(false)} onSave={async (patch) => { await mutateProfile(patch); }} onLogout={() => void signOut()} />}
-      {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={(input) => persistGrave(input)} onCreated={afterCreate} vipUnlocked={vipUnlocked} onVipTheme={vipThemeRequest} />}
+      {buryOpen && <BuryModal key={burySession} onClose={() => setBuryOpen(false)} onSubmit={(input) => persistGrave(input)} onCreated={afterCreate} vipUnlocked={vipUnlocked} onVipTheme={vipThemeRequest} />}
       {editTarget && <EditGraveModal makam={editTarget} onClose={() => setEditTarget(null)} onSave={saveEdit} vipUnlocked={vipUnlocked} onUpgradeTheme={upgradeTheme} />}
       {digTarget && <DigUpConfirmModal makam={digTarget} onClose={() => setDigTarget(null)} onConfirm={digUp} />}
       {storyTarget && <StoryStudioModal makam={graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget} vip={isVip(storyTarget)} theme={resolveTheme(storyTarget)} onClose={() => setStoryTarget(null)} />}

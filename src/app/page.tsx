@@ -45,6 +45,7 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Makam | null>(null);
   const [buryOpen, setBuryOpen] = useState(false);
+  const [burySession, setBurySession] = useState(0);
   const [storyTarget, setStoryTarget] = useState<Makam | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const heroCtaRef = useRef<HTMLButtonElement>(null);
@@ -53,6 +54,7 @@ export default function Home() {
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   useEffect(() => { if (!heroCtaRef.current || !("IntersectionObserver" in window)) { setHeroCtaVisible(false); return; } const observer = new IntersectionObserver(([entry]) => setHeroCtaVisible(entry.isIntersecting), { threshold: .1 }); observer.observe(heroCtaRef.current); return () => observer.disconnect(); }, []);
   const requireLogin = (action: () => void) => { if (!user) { setLoginOpen(true); return; } action(); };
+  const openBury = () => requireLogin(() => { setBurySession((session) => session + 1); setBuryOpen(true); });
   const erosion = (item: Makam): ErosionInfo => getErosionInfo(item, now);
   const vipUnlocked = vipIds.length > 0 || makam.some((item) => item.userId === user?.id && isVip(item));
 
@@ -110,7 +112,7 @@ export default function Home() {
   return (
     <main id="main" className="relative min-h-screen overflow-hidden pb-20">
       <AmbientBackground />
-      <Header onBury={() => requireLogin(() => setBuryOpen(true))} profile={user ? profile : undefined} onLogin={() => setLoginOpen(true)} onProfile={() => router.push("/profile")} onEditProfile={() => setProfileOpen(true)} onLogout={() => void signOut()} ctaVisible={heroCtaVisible} />
+      <Header onBury={() => openBury()} profile={user ? profile : undefined} onLogin={() => setLoginOpen(true)} onProfile={() => router.push("/profile")} onEditProfile={() => setProfileOpen(true)} onLogout={() => void signOut()} ctaVisible={heroCtaVisible} />
       {!configured && <div className="container-shell mt-2"><p role="status" className="status-banner">{process.env.NODE_ENV === "production" ? "Supabase belum dikonfigurasi. Isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY." : "Mode lokal aktif untuk development. Login dan aksi tersimpan server menunggu konfigurasi Supabase."}</p></div>}
       <section className="container-shell pb-12 pt-8 sm:pb-20 sm:pt-12">
         <div className="hero-wrap hero-layout px-5 py-8 sm:px-10 sm:py-12">
@@ -119,7 +121,7 @@ export default function Home() {
             <h1 className="mt-4 max-w-2xl text-display font-semibold tracking-[-.02em] text-[var(--text)]">Di sini, kegagalan punya tempat untuk pulang.</h1>
             <p className="mt-5 max-w-xl text-body text-[var(--text-muted)]">Tempat peristirahatan terakhir bagi wacana yang tak pernah terjadi. Tidak semua yang gagal harus dilupakan.</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button ref={heroCtaRef} size="lg" onClick={() => requireLogin(() => setBuryOpen(true))}><Plus size={18} strokeWidth={2.5} aria-hidden="true" />Kuburkan wacana</Button>
+              <Button ref={heroCtaRef} size="lg" onClick={() => openBury()}><Plus size={18} strokeWidth={2.5} aria-hidden="true" />Kuburkan wacana</Button>
               <Button size="lg" variant="secondary" onClick={() => document.getElementById("pemakaman")?.scrollIntoView({ behavior: "smooth" })}><ArrowDown size={18} aria-hidden="true" />Lihat pemakaman</Button>
             </div>
           </div>
@@ -145,11 +147,11 @@ export default function Home() {
         <div ref={graveyardRef} className="graveyard-ground">
           <div className="graveyard-horizon" aria-hidden="true" />
           <div className="graveyard-flashlight" aria-hidden="true" />
-          <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} isVip={isVip} erosion={erosion} />
+          <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))} onBury={() => openBury()} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} isVip={isVip} erosion={erosion} />
         </div>
       </section>
       {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} vip={isVip(selected)} erosion={erosion(selected)} onUpgrade={upgrade} onOpenStory={openStory} />}
-      {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={afterCreate} vipUnlocked={vipUnlocked} onVipTheme={vipThemeRequest} />}
+      {buryOpen && <BuryModal key={burySession} onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={afterCreate} vipUnlocked={vipUnlocked} onVipTheme={vipThemeRequest} />}
       {storyTarget && <StoryStudioModal makam={makam.find((item) => item.id === storyTarget.id) ?? storyTarget} vip={isVip(storyTarget)} theme={resolveTheme(storyTarget)} onClose={() => setStoryTarget(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       {profileOpen && user && <ProfileModal user={user} profile={profileRecord} onClose={() => setProfileOpen(false)} onSave={async (patch) => { await mutateProfile(patch); }} onLogout={() => void signOut()} />}

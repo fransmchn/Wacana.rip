@@ -16,6 +16,7 @@ import { DEFAULT_TEMA, getTemaNisan } from "@/lib/themes";
 // Daftar UI tetap lengkap; graveyardService menormalkan nilai ke constraint DB.
 const categoryLabels: Record<Kategori, string> = { skripsi: "Skripsi & riset", koding: "Koding & teknologi", desain: "Desain & karya", bisnis: "Bisnis & usaha", resolusi: "Resolusi & hobi", hubungan: "Hubungan", pribadi: "Hal pribadi", pekerjaan: "Pekerjaan & karier", keluarga: "Keluarga", kesehatan: "Kesehatan", perjalanan: "Perjalanan", lainnya: "Lainnya" };
 const today = () => new Date().toISOString().slice(0, 10);
+const initialForm = (): CreateMakamInput => ({ judul: "", kategori: DEFAULT_KATEGORI_DB, pembuat: "", tanggalMulai: today(), tanggalMenyerah: today(), penyebab: "", epitaph: "", tema: DEFAULT_TEMA });
 type FieldErrors = Partial<Record<keyof CreateMakamInput, string>>;
 
 interface BuryModalProps {
@@ -28,18 +29,24 @@ interface BuryModalProps {
 
 export function BuryModal({ onClose, onSubmit, onCreated, vipUnlocked, onVipTheme }: BuryModalProps) {
   const { toast } = useToast();
-  const [form, setForm] = useState<CreateMakamInput>({ judul: "", kategori: DEFAULT_KATEGORI_DB, pembuat: "", tanggalMulai: today(), tanggalMenyerah: today(), penyebab: "", epitaph: "", tema: DEFAULT_TEMA });
+  const [form, setForm] = useState<CreateMakamInput>(initialForm);
   const [showLoss, setShowLoss] = useState(true);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
-  const [confirmClose, setConfirmClose] = useState(false);
   const durasi = useMemo(() => getDurasiHari(form.tanggalMulai, form.tanggalMenyerah), [form.tanggalMulai, form.tanggalMenyerah]);
   const selectedTheme = getTemaNisan(form.tema);
   const needsVip = selectedTheme.vip && !vipUnlocked;
-  const dirty = Object.entries(form).some(([key, value]) => key === "kategori" ? value !== DEFAULT_KATEGORI_DB : key === "tema" ? value !== DEFAULT_TEMA : key === "tanggalMulai" || key === "tanggalMenyerah" ? false : Boolean(value));
+
   const set = <K extends keyof CreateMakamInput>(key: K, value: CreateMakamInput[K]) => setForm((current) => ({ ...current, [key]: value }));
 
-  function requestClose() { if (dirty) setConfirmClose(true); else onClose(); }
+  /** X, Batal, backdrop, dan Escape memakai jalur yang sama: selalu tutup + reset. */
+  function close() {
+    setForm(initialForm());
+    setShowLoss(true);
+    setErrors({});
+    setSaving(false);
+    onClose();
+  }
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
@@ -74,13 +81,13 @@ export function BuryModal({ onClose, onSubmit, onCreated, vipUnlocked, onVipThem
     if (Object.keys(nextErrors).length) { setErrors(nextErrors); return; }
     if (needsVip) { onVipTheme(form); return; }
     setErrors({}); setSaving(true);
-    try { const makam = await onSubmit(form); toast("Makam berhasil dikuburkan.", "success"); onCreated(makam); }
+    try { const makam = await onSubmit(form); toast("Makam berhasil dikuburkan.", "success"); onCreated(makam); close(); }
     catch (reason) { const next = mapSubmitError(reason); setErrors(next); toast(reason instanceof Error ? reason.message : "Pemakaman belum bisa dilakukan.", "danger"); }
     finally { setSaving(false); }
   }
 
-  return <Dialog open title="Kuburkan wacana" onClose={requestClose} className="modal-dialog-wide" footer={<>
-    <Button type="button" variant="ghost" onClick={requestClose}>Batal</Button>
+  return <Dialog open title="Kuburkan wacana" onClose={close} className="modal-dialog-wide" footer={<>
+    <Button type="button" variant="ghost" onClick={close}>Batal</Button>
     <Button className="modal-action-primary" type="submit" form="bury-form" loading={saving}>
       {needsVip ? <><Crown size={16} aria-hidden="true" />Buka Semua Tema &amp; Abadikan (VIP - Rp 15.000)</> : saving ? "Menurunkan nisan..." : "Kuburkan wacana"}
     </Button>
@@ -95,7 +102,6 @@ export function BuryModal({ onClose, onSubmit, onCreated, vipUnlocked, onVipThem
       <Input label="Kata terakhir" required maxLength={140} value={form.epitaph} onChange={(event) => set("epitaph", event.target.value)} placeholder="Satu kalimat untuk dikenang" error={errors.epitaph} counter={`${form.epitaph.length}/140`} />
       <section className={`loss-panel ${showLoss ? "loss-panel-active" : ""}`} aria-labelledby="loss-title"><div className="loss-panel-heading"><div><h3 id="loss-title">Catat kerugian</h3><p>Opsional: biaya, waktu, atau hal lain yang ikut hilang.</p></div><label className="loss-toggle"><input type="checkbox" checked={showLoss} onChange={(event) => { setShowLoss(event.target.checked); if (!event.target.checked) { set("kerugianTeks", undefined); set("kerugianRupiah", undefined); set("kerugianJam", undefined); } }} /><span aria-hidden="true"><Check size={14} /></span><span className="sr-only">Aktifkan pencatatan kerugian</span></label></div>{showLoss && <div className="modal-form-grid modal-form-grid-three"><Input label="Catatan" value={form.kerugianTeks ?? ""} onChange={(event) => set("kerugianTeks", event.target.value)} placeholder="Kopi, waktu, harapan" /><Input label="Rupiah" type="number" min="0" value={form.kerugianRupiah ?? ""} onChange={(event) => set("kerugianRupiah", event.target.value ? Number(event.target.value) : undefined)} placeholder="150000" error={errors.kerugianRupiah} /><Input label="Jam" type="number" min="0" value={form.kerugianJam ?? ""} onChange={(event) => set("kerugianJam", event.target.value ? Number(event.target.value) : undefined)} placeholder="24" error={errors.kerugianJam} /></div>}</section>
       <ThemePicker value={form.tema} onChange={(tema: NisanTema) => set("tema", tema)} vipUnlocked={vipUnlocked} previewTitle={form.judul} onUpgrade={() => { const nextErrors = validate(); if (Object.keys(nextErrors).length) { setErrors(nextErrors); return; } onVipTheme(form); }} />
-      {confirmClose && <div className="modal-confirm" role="alertdialog" aria-label="Konfirmasi buang isian"><p>Buang isian?</p><span>Isian yang belum disimpan akan hilang.</span><div><Button type="button" variant="ghost" onClick={() => setConfirmClose(false)}>Lanjut edit</Button><Button type="button" variant="danger" onClick={onClose}>Buang isian</Button></div></div>}
     </form>
   </Dialog>;
 }
