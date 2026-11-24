@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowDown, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginModal } from "@/components/LoginModal";
@@ -15,6 +16,7 @@ import { TombstoneGrid } from "@/components/TombstoneGrid";
 import { Footer } from "@/components/Footer";
 import { Select } from "@/components/ui/Select";
 import { useGraveyard } from "@/hooks/useGraveyard";
+import { usePointerGlow } from "@/hooks/usePointerGlow";
 import type { Kategori, Makam } from "@/types/graveyard";
 import { getDurasiHari, getErosionInfo, type ErosionInfo } from "@/lib/utils";
 import { useWibCountdown } from "@/components/useWibCountdown";
@@ -22,11 +24,15 @@ import { Button } from "@/components/ui/Button";
 import { HeroIllustration } from "@/components/HeroIllustration";
 import { useProfile } from "@/hooks/useProfile";
 import { useToast } from "@/components/ui/Toast";
+import { useVipUpgrade } from "@/components/VipUpgradeProvider";
+import { downloadAktaPng } from "@/lib/certificateCanvas";
 
 export default function Home() {
   const { makam, statistik, loading, error, bunga, lilin, komentar, kuburkan, bungaStatus, lilinSaya, refresh, refreshPersonalStatus } = useGraveyard();
   const { user, configured, signOut } = useAuth();
   const { toast } = useToast();
+  const { isVip, requestUpgrade } = useVipUpgrade();
+  const router = useRouter();
   const { profile: profileRecord, display: profile, mutate: mutateProfile } = useProfile(user);
   const [loginOpen, setLoginOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -38,28 +44,15 @@ export default function Home() {
   const [buryOpen, setBuryOpen] = useState(false);
   const [certificate, setCertificate] = useState<Makam | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
-  const [vipIds, setVipIds] = useState<Set<string>>(new Set());
   const heroCtaRef = useRef<HTMLButtonElement>(null);
+  const graveyardRef = usePointerGlow<HTMLDivElement>("element");
   useEffect(() => { const timer = window.setTimeout(() => setSearch(searchInput), 250); return () => window.clearTimeout(timer); }, [searchInput]);
   const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   useEffect(() => { if (!heroCtaRef.current || !("IntersectionObserver" in window)) { setHeroCtaVisible(false); return; } const observer = new IntersectionObserver(([entry]) => setHeroCtaVisible(entry.isIntersecting), { threshold: .1 }); observer.observe(heroCtaRef.current); return () => observer.disconnect(); }, []);
   const requireLogin = (action: () => void) => { if (!user) { setLoginOpen(true); return; } action(); };
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("wacana-rip:vip");
-      if (stored) setVipIds(new Set(JSON.parse(stored) as string[]));
-    } catch { /*VIP lokal opsional; abaikan storage yang rusak.*/ }
-  }, []);
-  // Makam dengan bunga banyak tampil sebagai monumen Abadi di mode demo,
-  // selain penanda vip dari data dan upgrade yang tersimpan lokal.
-  const isVip = (item: Makam) => Boolean(item.vip) || vipIds.has(item.id) || item.bunga >= 20;
   const erosion = (item: Makam): ErosionInfo => getErosionInfo(item);
-  const upgrade = (item: Makam) => requireLogin(() => {
-    const next = new Set(vipIds).add(item.id);
-    setVipIds(next);
-    try { window.localStorage.setItem("wacana-rip:vip", JSON.stringify([...next])); } catch { /*tetap aktif untuk sesi ini*/ }
-    toast("Makam Abadi aktif. Erosi dihentikan.", "success");
-  });
+  // Status VIP & checkout dipusatkan di VipUpgradeProvider; komponen hanya meminta.
+  const upgrade = (item: Makam) => requireLogin(() => requestUpgrade(item));
   const runRitual = (action: () => Promise<void>, successMessage: string) => { void action().then(() => toast(successMessage, "success")).catch((reason) => toast(reason instanceof Error ? reason.message : "Ritual belum bisa dilakukan.", "danger")); };
   const filtered = useMemo(() => makam
     .filter((item) => category === "semua" || item.kategori === category)
@@ -83,7 +76,7 @@ export default function Home() {
   return (
     <main id="main" className="relative min-h-screen overflow-hidden pb-20">
       <AmbientBackground />
-      <Header onBury={() => requireLogin(() => setBuryOpen(true))} profile={user ? profile : undefined} onLogin={() => setLoginOpen(true)} onEditProfile={() => setProfileOpen(true)} onLogout={() => void signOut()} ctaVisible={heroCtaVisible} />
+      <Header onBury={() => requireLogin(() => setBuryOpen(true))} profile={user ? profile : undefined} onLogin={() => setLoginOpen(true)} onProfile={() => router.push("/profile")} onEditProfile={() => setProfileOpen(true)} onLogout={() => void signOut()} ctaVisible={heroCtaVisible} />
       {!configured && <div className="container-shell mt-2"><p role="status" className="status-banner">{process.env.NODE_ENV === "production" ? "Supabase belum dikonfigurasi. Isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY." : "Mode lokal aktif untuk development. Login dan aksi tersimpan server menunggu konfigurasi Supabase."}</p></div>}
       <section className="container-shell pb-12 pt-8 sm:pb-20 sm:pt-12">
         <div className="hero-wrap hero-layout px-5 py-8 sm:px-10 sm:py-12">
@@ -115,12 +108,13 @@ export default function Home() {
         </div>
         <FilterBar category={category} search={searchInput} onCategory={setCategory} onSearch={setSearchInput} />
         <p className="sr-only" aria-live="polite">{filtered.length} makam ditemukan</p>
-        <div className="graveyard-ground">
+        <div ref={graveyardRef} className="graveyard-ground">
           <div className="graveyard-horizon" aria-hidden="true" />
+          <div className="graveyard-flashlight" aria-hidden="true" />
           <TombstoneGrid loading={loading} error={error} onRetry={() => void refresh()} hasFilter={hasFilter} onResetFilter={resetFilters} makam={filtered} onSelect={setSelected} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onBury={() => requireLogin(() => setBuryOpen(true))} highlightedId={highlightedId} flowerStatus={flowerStatus} flowerCountdown={flowerCountdown} candleMine={(id) => lilinSaya.has(id)} isVip={isVip} erosion={erosion} />
         </div>
       </section>
-      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} candleMine={lilinSaya.has(selected.id)} vip={isVip(selected)} erosion={erosion(selected)} onUpgrade={upgrade} />}
+      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id), "Bunga berhasil ditaburkan."))} onCandle={(id) => requireLogin(() => runRitual(() => lilin(id), "Lilin berhasil dinyalakan."))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} candleMine={lilinSaya.has(selected.id)} vip={isVip(selected)} erosion={erosion(selected)} onUpgrade={upgrade} onDownloadAkta={downloadAktaPng} />}
       {buryOpen && <BuryModal onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={(newMakam) => { setBuryOpen(false); setHighlightedId(newMakam.id); window.setTimeout(() => setHighlightedId(null), 1900); window.setTimeout(() => setCertificate(newMakam), 900); }} />}
       {certificate && <DeathCertificateModal makam={certificate} onClose={() => setCertificate(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}

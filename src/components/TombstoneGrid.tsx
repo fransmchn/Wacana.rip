@@ -1,5 +1,4 @@
 import { AlertTriangle, Landmark } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
 import type { CSSProperties } from "react";
 import type { Makam } from "@/types/graveyard";
 import type { ErosionInfo } from "@/lib/utils";
@@ -55,24 +54,22 @@ export function TombstoneGrid({ makam, loading = false, hasFilter = false, error
   if (!makam.length) return <EmptyState icon={<Landmark size={20} />} title="Belum ada makam di sini" description="Wacana pertama bisa punya tempat untuk pulang." actionLabel="Kuburkan wacana pertama" onAction={onBury} />;
   return (
     <div className="graveyard-plots">
-      <AnimatePresence initial={false}>
-        {makam.map((item, index) => (
-          <div key={item.id} className="grave-plot" style={plotStyle(index)}>
-            <TombstoneCard
-              makam={item}
-              onSelect={onSelect}
-              onFlower={onFlower}
-              onCandle={onCandle}
-              flowerStatus={flowerStatus(item.id)}
-              flowerCountdown={flowerCountdown(item.id)}
-              candleMine={candleMine(item.id)}
-              isVip={isVip(item)}
-              erosion={erosion(item)}
-              highlighted={item.id === highlightedId}
-            />
-          </div>
-        ))}
-      </AnimatePresence>
+      {makam.map((item, index) => (
+        <div key={item.id} className="grave-plot" style={plotStyle(index)}>
+          <TombstoneCard
+            makam={item}
+            onSelect={onSelect}
+            onFlower={onFlower}
+            onCandle={onCandle}
+            flowerStatus={flowerStatus(item.id)}
+            flowerCountdown={flowerCountdown(item.id)}
+            candleMine={candleMine(item.id)}
+            isVip={isVip(item)}
+            erosion={erosion(item)}
+            highlighted={item.id === highlightedId}
+          />
+        </div>
+      ))}
     </div>
   );
 }

@@ -22,11 +22,12 @@
   border: 1px solid;
   border-radius: 96px 96px 14px 14px;
   cursor: default;
-  transition: transform var(--duration-standard) var(--ease-standard), box-shadow var(--duration-standard) var(--ease-standard), border-color var(--duration-standard) var(--ease-standard), filter var(--duration-standard) var(--ease-standard);
+  transition: transform var(--duration-standard) var(--ease-standard), box-shadow var(--duration-standard) var(--ease-standard), border-color var(--duration-standard) var(--ease-standard);
   animation: tombstone-entry .55s var(--ease-standard) both;
   animation-delay: var(--stagger, 0ms);
+  will-change: auto;
 }
-.tombstone:hover { transform: translateY(-7px); filter: brightness(1.08); }
+.tombstone:hover { transform: translateY(-7px); }
 .tombstone:focus-visible { outline: 2px solid var(--amber); outline-offset: 5px; }
 .tombstone:has(.tombstone-title:focus-visible) { outline: 2px solid var(--amber); outline-offset: 4px; }
 .tombstone:active { transform: translateY(-2px); }
@@ -99,8 +100,8 @@
 .tombstone-vip .tombstone-eternal { display: flex; align-items: center; gap: 6px; margin: 0; color: #e6c686; font: 500 10px/1.4 var(--font-jetbrains-mono), monospace; letter-spacing: .04em; }
 
 /* Cahaya, lilin, dan jejak ----------------------------------- */
-.tombstone-ground-shadow { position: absolute; z-index: 0; right: 4%; bottom: 0; left: 4%; height: 18px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0 0 0 / .55), transparent 72%); filter: blur(4px); }
-.tombstone-light { position: absolute; z-index: 2; inset: 0; opacity: 0; background: radial-gradient(220px circle at var(--light-x, 50%) var(--light-y, 20%), rgba(255 232 183 / .2), rgba(245 158 11 / .06) 45%, transparent 72%); mix-blend-mode: screen; transition: opacity var(--duration-standard) var(--ease-standard); pointer-events: none; }
+.tombstone-ground-shadow { position: absolute; z-index: 0; right: 4%; bottom: 0; left: 4%; height: 18px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0 0 0 / .55), transparent 72%); will-change: auto; }
+.tombstone-light { position: absolute; z-index: 2; inset: 0; opacity: 0; background: radial-gradient(220px circle at 50% 12%, rgba(255 232 183 / .2), rgba(245 158 11 / .06) 45%, transparent 72%); transition: opacity var(--duration-standard) var(--ease-standard); pointer-events: none; will-change: auto; }
 .tombstone:hover .tombstone-light, .tombstone:focus-within .tombstone-light { opacity: 1; }
 .tombstone-candle-flame { position: absolute; z-index: 5; top: 24px; left: 50%; width: 10px; height: 15px; opacity: 0; transform: translateX(-50%) scale(.6); transition: opacity var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard); pointer-events: none; }
 .tombstone-candle-flame i { display: block; width: 100%; height: 100%; border-radius: 50% 50% 45% 45%; background: radial-gradient(circle at 50% 70%, #fff6d2, var(--amber) 58%, rgba(245, 158, 11, 0)); box-shadow: 0 0 12px 4px rgba(245 158 11 / .45), 0 0 42px 16px rgba(245 158 11 / .2); }
@@ -117,8 +118,8 @@
 .tombstone-marmer .tombstone-badge { color: var(--tomb-ink); }
 .tombstone-id { flex: 0 0 auto; color: var(--tomb-ink-muted); font: 400 10px/1.4 var(--font-jetbrains-mono), monospace; }
 .tombstone-ornament { align-self: center; margin: var(--space-4) 0 6px; color: var(--tomb-ink-muted); opacity: .8; }
-.tombstone-title { position: relative; z-index: 4; min-height: 3.4rem; overflow: visible; border: 0; background: transparent; color: var(--tomb-ink); padding: 0; font-family: var(--font-playfair); font-size: 1.4rem; font-weight: 600; line-height: 1.28; letter-spacing: -.01em; text-align: center; cursor: pointer; }
-.tombstone-title span { display: -webkit-box; overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.tombstone-title { position: relative; z-index: 4; width: 100%; min-height: 4.8rem; overflow: visible; border: 0; background: transparent; color: var(--tomb-ink); padding: 0; font-family: var(--font-playfair); font-size: clamp(1.05rem, 1.35vw, 1.35rem); font-weight: 600; line-height: 1.25; letter-spacing: -.01em; text-align: center; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; text-wrap: pretty; cursor: pointer; }
+.tombstone-title span { display: block; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
 .tombstone-title::after { position: absolute; z-index: 0; inset: -48px -16px -48px; content: ""; }
 .tombstone-title:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
 .tombstone-life { min-height: 46px; margin-top: var(--space-2); color: var(--tomb-ink-muted); font: 400 10px/1.55 var(--font-jetbrains-mono), monospace; text-align: center; }
@@ -138,15 +139,19 @@
 .tombstone-actions { position: relative; z-index: 4; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: auto; border-top: 1px solid var(--tomb-line); padding-top: var(--space-3); }
 .tombstone-actions .ui-button { min-width: 0; min-height: 34px; padding-inline: 8px; border-color: var(--tomb-line); background: var(--tomb-action-bg); color: var(--tomb-action-ink); font-size: 10.5px; }
 .tombstone-actions .ui-button:hover { border-color: var(--tomb-action-hover-border); background: var(--tomb-action-hover-bg); }
-.tombstone-actions .ui-button:active, .tombstone-actions .ui-button:focus-visible { border-color: var(--tomb-action-hover-border); filter: brightness(1.15); }
+.tombstone-actions .ui-button:active, .tombstone-actions .ui-button:focus-visible { border-color: var(--tomb-action-hover-border); }
 .tombstone-actions .ui-button:disabled { border-color: var(--tomb-action-disabled-border); background: var(--tomb-action-disabled-bg); color: var(--tomb-action-disabled-ink); opacity: 1; }
 .tombstone-actions .ui-button-label { min-width: 0; }
 .tombstone-actions .ui-spinner { color: currentColor; }
 
-/* Kelopak digital --------------------------------------------- */
+/* Kelopak digital — animasi CSS pada opacity/transform saja ----- */
 .flower-burst { position: absolute; z-index: 6; top: 34%; left: 50%; width: 1px; height: 1px; pointer-events: none; }
-.flower-petal { position: absolute; display: block; color: var(--rose-bright); filter: drop-shadow(0 2px 3px rgb(0 0 0 / .35)); }
-.digital-petal { position: absolute; display: block; width: 8px; height: 12px; border-radius: 60% 10% 60% 10%; background: linear-gradient(135deg, #ffd9dc, #d87078 70%); box-shadow: 0 0 8px rgba(216 112 120 / .45); }
+.digital-petal { position: absolute; display: block; width: 8px; height: 12px; border-radius: 60% 10% 60% 10%; background: linear-gradient(135deg, #ffd9dc, #d87078 70%); box-shadow: 0 0 8px rgba(216 112 120 / .45); opacity: 0; will-change: auto; transform: translate3d(var(--petal-x, 0px), -70px, 0) scale(var(--petal-scale, 1)); animation: petal-fall var(--petal-duration, 1.5s) cubic-bezier(.22, .61, .36, 1) var(--petal-delay, 0s) both; }
+@keyframes petal-fall {
+  0% { opacity: 0; transform: translate3d(var(--petal-x, 0px), -70px, 0) rotate(0deg) scale(var(--petal-scale, 1)); }
+  20%, 70% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(var(--petal-drift, 0px), 140px, 0) rotate(var(--petal-rotate, 180deg)) scale(var(--petal-scale, 1)); }
+}
 .digital-petal-1 { background: linear-gradient(135deg, #ffe9c9, #e6a45f 70%); }
 .digital-petal-2 { background: linear-gradient(135deg, #f4e0ea, #b97a9c 70%); }
 .flower-burst-reduced { position: absolute; z-index: 6; top: 42%; left: 50%; color: var(--rose-bright); font-size: 12px; font-weight: 600; pointer-events: none; transform: translateX(-50%); }
@@ -158,6 +163,7 @@
 @media (max-width: 640px) {
   .tombstone, .tombstone-body, .tombstone-skeleton { min-height: 420px; }
   .tombstone-body { padding-inline: 18px; }
+  .tombstone-title { min-height: 4.4rem; font-size: clamp(1.05rem, 5vw, 1.25rem); }
 }
 @media (prefers-reduced-motion: reduce) {
   .tombstone, .tombstone.is-lit .tombstone-candle-flame { animation: none; }

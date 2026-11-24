@@ -28,8 +28,17 @@ export interface Makam {
   lilinCount?: number;
   /** Makam Abadi VIP — dikunci dari erosi dan memakai monumen obsidian. */
   vip?: boolean;
+  /** Pemilik makam; dipakai untuk daftar dan aksi CRUD di profil. */
+  userId?: string;
   komentar: Komentar[];
   createdAt: string;
+}
+
+export interface EditMakamInput {
+  judul: string;
+  kategori: Kategori;
+  penyebab: string;
+  epitaph: string;
 }
 
 export interface CreateMakamInput {

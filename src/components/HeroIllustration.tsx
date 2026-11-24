@@ -1,55 +1,38 @@
 "use client";
 
-import { motion, useReducedMotion, useSpring } from "framer-motion";
+import type { CSSProperties } from "react";
 import { Sparkles } from "lucide-react";
 import { StatsBanner } from "@/components/StatsBanner";
+import { usePointerGlow } from "@/hooks/usePointerGlow";
 import type { Statistik } from "@/types/graveyard";
 
-const dust = Array.from({ length: 22 }, (_, index) => ({
+const dust = Array.from({ length: 8 }, (_, index) => ({
   left: `${6 + ((index * 37) % 88)}%`,
   top: `${10 + ((index * 53) % 78)}%`,
-  size: index % 4 === 0 ? 3 : index % 3 === 0 ? 2 : 1,
+  size: index % 4 === 0 ? 3 : 2,
   delay: (index % 8) * -0.9,
-  duration: 4.5 + (index % 5) * 1.3,
+  duration: 5 + (index % 5) * 1.3,
   drift: ((index * 19) % 30) - 15,
 }));
 
 export function HeroIllustration({ statistik }: { statistik: Statistik }) {
-  const reducedMotion = useReducedMotion();
-  const rotateX = useSpring(0, { stiffness: 120, damping: 22 });
-  const rotateY = useSpring(0, { stiffness: 120, damping: 22 });
-
-  function handleMove(event: React.PointerEvent<HTMLDivElement>) {
-    if (reducedMotion || event.pointerType !== "mouse") return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const nx = (event.clientX - rect.left) / rect.width - 0.5;
-    const ny = (event.clientY - rect.top) / rect.height - 0.5;
-    rotateY.set(nx * 14);
-    rotateX.set(-ny * 10);
-  }
-
-  function handleLeave() {
-    rotateX.set(0);
-    rotateY.set(0);
-  }
+  const sceneRef = usePointerGlow<HTMLDivElement>("element");
 
   return (
     <div className="altar-column">
-      <div className="altar-scene" onPointerMove={handleMove} onPointerLeave={handleLeave}>
+      <div ref={sceneRef} className="altar-scene">
         <div className="altar-aura" aria-hidden="true" />
         <div className="altar-dust" aria-hidden="true">
           {dust.map((particle, index) => (
-            <motion.i
+            <i
               key={index}
               className="dust-mote"
-              style={{ left: particle.left, top: particle.top, width: particle.size, height: particle.size }}
-              animate={reducedMotion ? undefined : { y: [8, -48], x: [0, particle.drift], opacity: [0, 0.75, 0] }}
-              transition={{ duration: particle.duration, delay: particle.delay, repeat: Infinity, ease: "linear" }}
+              style={{ left: particle.left, top: particle.top, width: particle.size, height: particle.size, "--dust-delay": `${particle.delay}s`, "--dust-duration": `${particle.duration}s`, "--dust-drift": `${particle.drift}px` } as CSSProperties}
             />
           ))}
         </div>
 
-        <motion.div className="altar-monument" style={reducedMotion ? undefined : { rotateX, rotateY, transformPerspective: 900 }}>
+        <div className="altar-monument">
           <div className="altar-ground-shadow" aria-hidden="true" />
           <div className="altar-stone" aria-hidden="true">
             <div className="altar-stone-face">
@@ -66,7 +49,7 @@ export function HeroIllustration({ statistik }: { statistik: Statistik }) {
           <div className="altar-plinth altar-plinth-base" aria-hidden="true" />
           <div className="altar-candle altar-candle-left" aria-hidden="true"><span className="altar-flame" /></div>
           <div className="altar-candle altar-candle-right" aria-hidden="true"><span className="altar-flame" /></div>
-        </motion.div>
+        </div>
       </div>
       <StatsBanner statistik={statistik} />
     </div>

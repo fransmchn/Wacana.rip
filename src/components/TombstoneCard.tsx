@@ -1,7 +1,6 @@
 "use client";
 
 import { Check, Crown, Flower2, Flame, Hourglass, Sparkles } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { FlowerBurst } from "@/components/FlowerBurst";
 import { Badge } from "@/components/ui/Badge";
@@ -33,7 +32,6 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
   const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
   const [flowerBurst, setFlowerBurst] = useState(false);
   const [litOverride, setLitOverride] = useState<boolean | null>(null);
-  const reducedMotion = useReducedMotion();
   const isNew = durasi < 1;
   const candleCount = makam.lilinCount ?? (makam.lilin ? 1 : 0);
   const isLit = litOverride ?? (candleMine || makam.lilin);
@@ -50,20 +48,8 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
     onCandle(makam.id);
   }
 
-  function handlePointerMove(event: React.PointerEvent<HTMLElement>) {
-    if (event.pointerType !== "mouse") return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    event.currentTarget.style.setProperty("--light-x", `${event.clientX - rect.left}px`);
-    event.currentTarget.style.setProperty("--light-y", `${event.clientY - rect.top}px`);
-  }
-
   return (
-    <motion.article
-      layout
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: reducedMotion ? 0 : 0.45 }}
-      onPointerMove={handlePointerMove}
+    <article
       className={`tombstone tombstone-${tipe} ${isVip ? "tombstone-vip" : ""} ${isLit ? "is-lit" : ""} ${highlighted ? "tombstone-new" : ""}`}
       onClick={(event) => { if (event.target === event.currentTarget) onSelect(makam); }}
       onKeyDown={(event) => { if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) return; if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(makam); } }}
@@ -105,6 +91,6 @@ export function TombstoneCard({ makam, onSelect, onFlower, onCandle, flowerStatu
           </Tooltip>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

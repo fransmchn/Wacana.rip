@@ -2,7 +2,7 @@ import { seedData } from "@/lib/seedData";
 import { createId } from "@/lib/utils";
 import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
-import { KATEGORI, type CreateMakamInput, type KomentarInput, type Kategori, type Komentar, type Makam, type Statistik } from "@/types/graveyard";
+import { KATEGORI, type CreateMakamInput, type EditMakamInput, type KomentarInput, type Kategori, type Komentar, type Makam, type Statistik } from "@/types/graveyard";
 
 export interface BungaHariIni { sudahMenabur: boolean; serverNow: string; berlakuHingga?: string; }
 export class BungaSudahDitaburError extends Error {
@@ -112,6 +112,7 @@ function mapComment(row: KomentarRow): Komentar {
 function mapMakam(row: MakamRow, komentar: Komentar[] = []): Makam {
   return {
     id: row.id,
+    userId: row.user_id ?? undefined,
     judul: row.judul,
     kategori: row.kategori,
     pembuat: row.tampil_anonim ? "Anonim" : "Anonim",
@@ -168,7 +169,7 @@ export async function createMakam(rawInput: CreateMakamInput): Promise<Makam> {
   const input = assertInput(rawInput);
   const client = supabase();
   if (!client) return localFallback(() => {
-    const makam: Makam = { id: createId(), judul: input.judul, kategori: input.kategori, pembuat: input.pembuat ?? "Anonim", tanggalMulai: input.tanggalMulai, tanggalMenyerah: input.tanggalMenyerah, penyebab: input.penyebab, epitaph: input.epitaph, kronologi: input.kronologi ?? "", kerugianTeks: input.kerugianTeks ?? "", ...(input.kerugianRupiah === undefined ? {} : { kerugianRupiah: input.kerugianRupiah }), ...(input.kerugianJam === undefined ? {} : { kerugianJam: input.kerugianJam }), bunga: 0, lilin: false, komentar: [], createdAt: new Date().toISOString() };
+    const makam: Makam = { id: createId(), userId: "local", judul: input.judul, kategori: input.kategori, pembuat: input.pembuat ?? "Anonim", tanggalMulai: input.tanggalMulai, tanggalMenyerah: input.tanggalMenyerah, penyebab: input.penyebab, epitaph: input.epitaph, kronologi: input.kronologi ?? "", kerugianTeks: input.kerugianTeks ?? "", ...(input.kerugianRupiah === undefined ? {} : { kerugianRupiah: input.kerugianRupiah }), ...(input.kerugianJam === undefined ? {} : { kerugianJam: input.kerugianJam }), bunga: 0, lilin: false, komentar: [], createdAt: new Date().toISOString() };
     const makamList = readLocal();
     makamList.unshift(makam);
     writeLocal(makamList);
@@ -191,6 +192,44 @@ export async function createMakam(rawInput: CreateMakamInput): Promise<Makam> {
   throwSupabase(result.error);
   if (!result.data) throw new Error("Supabase tidak mengembalikan makam baru.");
   return mapMakam(result.data);
+}
+
+/** Makam milik pengguna. Mode lokal memakai semua data demo sebagai "milik saya". */
+export async function listMakamSaya(userId?: string): Promise<Makam[]> {
+  const client = supabase();
+  if (!client) return localFallback(readLocal);
+  if (!userId) throw new Error("Masuk dulu untuk melihat makammu.");
+  const result = await client.from("makam").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+  throwSupabase(result.error);
+  return Promise.all((result.data ?? []).map(async (row) => mapMakam(row, await getRemoteComments(client, row.id))));
+}
+
+/** Sunting hanya empat hal yang memang bisa diubah pembuatnya. */
+export async function updateMakam(id: string, rawInput: EditMakamInput, userId?: string): Promise<Makam> {
+  const input = {
+    judul: cleanText(rawInput.judul, 120),
+    kategori: rawInput.kategori,
+    penyebab: cleanText(rawInput.penyebab, 160),
+    epitaph: cleanText(rawInput.epitaph, 140),
+  };
+  if (!input.judul) throw new Error("Nama wacana wajib diisi.");
+  if (!new Set<Kategori>([...KATEGORI]).has(input.kategori)) throw new Error("Kategori tidak valid.");
+  if (!input.penyebab) throw new Error("Penyebab kematian wajib diisi.");
+  if (!input.epitaph) throw new Error("Kata terakhir wajib diisi.");
+
+  const client = supabase();
+  if (!client) return localFallback(() => updateLocal(id, (makam) => ({ ...makam, ...input })));
+  let query = client.from("makam").update({
+    judul: input.judul,
+    kategori: input.kategori,
+    penyebab: input.penyebab,
+    epitaph: input.epitaph,
+  }).eq("id", id);
+  if (userId) query = query.eq("user_id", userId);
+  const result = await query.select("*").maybeSingle();
+  throwSupabase(result.error);
+  if (!result.data) throw new Error("Makam tidak ditemukan atau bukan milikmu.");
+  return mapMakam(result.data, await getRemoteComments(client, id));
 }
 
 export async function taburBunga(id: string): Promise<Makam> {
@@ -281,11 +320,14 @@ export async function getLilinSaya(ids: string[]): Promise<LilinSaya> {
   return { ids: (result.data ?? []).map((row) => row.makam_id) };
 }
 
-export async function hapusMakam(id: string): Promise<void> {
+export async function hapusMakam(id: string, userId?: string): Promise<void> {
   const client = supabase();
   if (!client) { localFallback(() => writeLocal(readLocal().filter((makam) => makam.id !== id))); return; }
-  const result = await client.from("makam").delete().eq("id", id);
+  let query = client.from("makam").delete().eq("id", id);
+  if (userId) query = query.eq("user_id", userId);
+  const result = await query.select("id");
   throwSupabase(result.error);
+  if (!result.data?.length) throw new Error("Makam tidak ditemukan atau bukan milikmu.");
 }
 
 export async function hapusKomentar(id: string): Promise<void> {

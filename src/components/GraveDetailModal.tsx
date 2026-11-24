@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { Crown, Flame, Flower2, Hourglass, MessageCircle } from "lucide-react";
+import { Crown, Download, Flame, Flower2, Hourglass, MessageCircle } from "lucide-react";
 import { FlowerBurst } from "@/components/FlowerBurst";
 import { Dialog } from "@/components/ui/Dialog";
 import { Badge } from "@/components/ui/Badge";
@@ -30,13 +30,23 @@ interface GraveDetailModalProps {
   vip: boolean;
   erosion: ErosionInfo;
   onUpgrade: (makam: Makam) => void;
+  onDownloadAkta?: (makam: Makam) => void | Promise<void>;
 }
 
-export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment, flowerStatus, flowerCountdown, candleMine, vip, erosion, onUpgrade }: GraveDetailModalProps) {
+export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment, flowerStatus, flowerCountdown, candleMine, vip, erosion, onUpgrade, onDownloadAkta }: GraveDetailModalProps) {
   const { toast } = useToast();
   const [input, setInput] = useState<KomentarInput>({ nama: "", isi: "" });
   const [saving, setSaving] = useState(false);
   const [flowerBurst, setFlowerBurst] = useState(false);
+  const [aktaBusy, setAktaBusy] = useState(false);
+
+  async function downloadAkta() {
+    if (!onDownloadAkta) return;
+    setAktaBusy(true);
+    try { await onDownloadAkta(makam); toast("Akta kematian siap dibagikan.", "success"); }
+    catch (reason) { toast(reason instanceof Error ? reason.message : "Akta gagal dibuat.", "danger"); }
+    finally { setAktaBusy(false); }
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -87,6 +97,7 @@ export function GraveDetailModal({ makam, onClose, onFlower, onCandle, onComment
           <Tooltip label={candleMine ? "Matikan lilin" : "Nyalakan lilin"}>
             <Button variant="secondary" onClick={() => onCandle(makam.id)} aria-pressed={candleMine}><Flame size={16} aria-hidden="true" /><span>{candleMine ? "Matikan lilin" : "Nyalakan lilin"} · {makam.lilinCount ?? (makam.lilin ? 1 : 0)}</span></Button>
           </Tooltip>
+          {onDownloadAkta && <Button variant="secondary" loading={aktaBusy} onClick={() => void downloadAkta()}><Download size={16} aria-hidden="true" /><span>Unduh Akta Kematian (PNG)</span></Button>}
         </div>
 
         {!vip && (

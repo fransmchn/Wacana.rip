@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Pencil, Plus } from "lucide-react";
+import { LogOut, Pencil, Plus, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -12,13 +12,14 @@ interface HeaderProps {
   onBury: () => void;
   profile?: ProfileDisplay;
   onLogin: () => void;
+  onProfile?: () => void;
   onEditProfile: () => void;
   onLogout: () => void;
   ctaVisible?: boolean;
   profileMenuOpen?: boolean;
 }
 
-export function Header({ onBury, profile, onLogin, onEditProfile, onLogout, ctaVisible = false, profileMenuOpen = false }: HeaderProps) {
+export function Header({ onBury, profile, onLogin, onProfile, onEditProfile, onLogout, ctaVisible = false, profileMenuOpen = false }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 8); window.addEventListener("scroll", onScroll, { passive: true }); onScroll(); return () => window.removeEventListener("scroll", onScroll); }, []);
   return <header className={`site-header ${scrolled ? "site-header-scrolled" : ""}`}><div className="container-shell site-header-inner">
@@ -29,7 +30,7 @@ export function Header({ onBury, profile, onLogin, onEditProfile, onLogout, ctaV
       <IconButton className="header-cta-mobile" variant="primary" size="md" label="Kuburkan wacana" onClick={onBury}><Plus size={18} strokeWidth={2.5} aria-hidden="true" /></IconButton>
       {profile && <DropdownMenu defaultOpen={profileMenuOpen} label="Menu profil" trigger={<Avatar name={profile.name} initials={profile.initials} src={profile.avatarUrl} tone={profile.avatarTone} size="md" />}>
         <DropdownLabel><span className="ui-profile-menu-head"><Avatar name={profile.name} initials={profile.initials} src={profile.avatarUrl} tone={profile.avatarTone} size="md" /><span><strong>{profile.name}</strong><small>{profile.email}</small></span></span></DropdownLabel>
-        <DropdownSeparator /><DropdownItem icon={<Pencil size={16} />} onSelect={onEditProfile}>Edit profil</DropdownItem><DropdownItem icon={<LogOut size={16} />} danger onSelect={onLogout}>Keluar</DropdownItem>
+        <DropdownSeparator />{onProfile && <DropdownItem icon={<UserRound size={16} />} onSelect={onProfile}>Profil & makam saya</DropdownItem>}<DropdownItem icon={<Pencil size={16} />} onSelect={onEditProfile}>Edit profil</DropdownItem><DropdownItem icon={<LogOut size={16} />} danger onSelect={onLogout}>Keluar</DropdownItem>
       </DropdownMenu>}
     </div>
   </div></header>;
