@@ -635,6 +635,19 @@ body {
 .checkout-qr-grid span.is-filled { background: #d8cbb2; }
 .checkout-qr-caption { color: var(--text-muted); font: 400 var(--text-label)/1 var(--font-jetbrains-mono), monospace; letter-spacing: .08em; text-transform: uppercase; }
 .checkout-note { margin: 0; color: var(--text-muted); font-size: var(--text-label); line-height: 1.5; text-align: center; }
+.checkout-themes { display: grid; gap: var(--space-3); margin: 0; padding: 0; border: 0; }
+.checkout-themes legend { margin-bottom: var(--space-2); color: var(--text-muted); font: 500 var(--text-label)/1 var(--font-jetbrains-mono), monospace; letter-spacing: .08em; text-transform: uppercase; }
+.checkout-theme-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.checkout-theme-card { position: relative; display: grid; justify-items: center; gap: 6px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: rgba(255 255 255 / .025); padding: var(--space-3) var(--space-2); color: var(--text-muted); text-align: center; transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
+.checkout-theme-card:hover { transform: translateY(-2px); border-color: var(--swatch-accent); color: var(--text); }
+.checkout-theme-card-active { border-color: var(--swatch-accent); background: color-mix(in srgb, var(--swatch-accent) 12%, transparent); color: var(--text); box-shadow: 0 0 18px color-mix(in srgb, var(--swatch-accent) 18%, transparent); }
+.checkout-theme-name { font-size: var(--text-label); font-weight: 600; line-height: 1.25; }
+.checkout-theme-check { position: absolute; top: 8px; right: 8px; color: var(--swatch-accent); }
+.checkout-gateway-badge { display: flex; align-items: center; gap: var(--space-2); border: 1px solid rgba(216 173 105 / .24); border-radius: var(--radius-md); background: rgba(255 255 255 / .03); padding: var(--space-3); color: var(--text-muted); font-size: var(--text-label); line-height: 1.45; }
+.checkout-gateway-badge svg { flex: 0 0 auto; color: var(--gold); }
+.checkout-footer-actions { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.checkout-footer-primary { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-left: auto; }
+.checkout-demo-bypass { border-style: dashed; border-color: rgba(216 173 105 / .45); color: var(--gold); }
 .edit-grave-form { display: grid; gap: var(--space-5); padding-top: var(--space-5); }
 .dig-up-confirm { display: grid; justify-items: start; gap: var(--space-3); padding-top: var(--space-5); }
 .dig-up-symbol { display: grid; width: 52px; height: 52px; place-items: center; border: 1px solid rgba(240 140 145 / .4); border-radius: 50%; background: rgba(240 140 145 / .1); color: var(--danger); }
@@ -678,20 +691,20 @@ body {
 .theme-swatch-name { font-size: var(--text-label); font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
 .theme-swatch-tag { display: inline-flex; align-items: center; gap: 3px; color: var(--swatch-accent); font: 500 9px/1 var(--font-jetbrains-mono), monospace; letter-spacing: .06em; text-transform: uppercase; }
 .theme-swatch-locked .theme-swatch-stone { opacity: .82; }
-.theme-swatch-batu-lapuk { --swatch-accent: #c9bda9; --swatch-bg: linear-gradient(145deg, #a49a8c, #5f5852 52%, #3c3835); }
-.theme-swatch-beton-retak { --swatch-accent: #9fb4bd; --swatch-bg: linear-gradient(150deg, #59646a, #2e363b 55%, #1d2428); }
-.theme-swatch-obsidian-emas { --swatch-accent: #d8ad69; --swatch-bg: linear-gradient(145deg, #2c2433, #0d0b11 55%, #19131f); }
-.theme-swatch-marmer-lumut { --swatch-accent: #b9d6c6; --swatch-bg: linear-gradient(145deg, #1f4a3b, #102c26 55%, #071916); }
-.theme-swatch-y2k-chrome { --swatch-accent: #b8d8e8; --swatch-bg: linear-gradient(120deg, #b7c8d6, #4b5f78 28%, #cdb8da 52%, #2b3346 74%, #9fd6d0); }
-.theme-swatch-crimson-velvet { --swatch-accent: #e0a0a8; --swatch-bg: linear-gradient(145deg, #7c1c28, #3d0c14 58%, #1c060a); }
+.theme-swatch-batu-lapuk { --swatch-accent: #a1a1aa; --swatch-bg: linear-gradient(150deg, #3f3f46, #323238 52%, #27272a); }
+.theme-swatch-beton-retak { --swatch-accent: #94a3b8; --swatch-bg: linear-gradient(150deg, #334155, #253143 55%, #1e293b); }
+.theme-swatch-obsidian-emas { --swatch-accent: #fbbf24; --swatch-bg: linear-gradient(145deg, #18181b, #09090b 55%, #1c1507); }
+.theme-swatch-marmer-lumut { --swatch-accent: #6ee7b7; --swatch-bg: linear-gradient(145deg, #064e3b, #04382a 55%, #022c22); }
+.theme-swatch-y2k-chrome { --swatch-accent: #38bdf8; --swatch-bg: linear-gradient(135deg, #e4e4e7 0%, #71717a 36%, #52525b 58%, #18181b 100%); }
+.theme-swatch-crimson-velvet { --swatch-accent: #fda4af; --swatch-bg: linear-gradient(145deg, #7f1d1d, #5c1111 58%, #450a0a); }
 
-.theme-preview { --preview-bg: linear-gradient(145deg, #8d8172, #3d3834); --preview-accent: #c9bda9; display: flex; min-width: 0; align-items: center; gap: var(--space-4); border: 1px solid color-mix(in srgb, var(--preview-accent) 28%, transparent); border-radius: var(--radius-md); background: rgba(0 0 0 / .3); padding: var(--space-3); }
-.theme-preview-batu-lapuk { --preview-bg: linear-gradient(145deg, #8d8172, #3d3834); --preview-accent: #c9bda9; }
-.theme-preview-beton-retak { --preview-bg: linear-gradient(150deg, #59646a, #1d2428); --preview-accent: #9fb4bd; }
-.theme-preview-obsidian-emas { --preview-bg: linear-gradient(145deg, #1c1823, #0e0c12); --preview-accent: #d8ad69; }
-.theme-preview-marmer-lumut { --preview-bg: linear-gradient(145deg, #1f4a3b, #071916); --preview-accent: #b9d6c6; }
-.theme-preview-y2k-chrome { --preview-bg: linear-gradient(120deg, #4f6078, #3d2c4d, #35625f); --preview-accent: #b8d8e8; }
-.theme-preview-crimson-velvet { --preview-bg: linear-gradient(145deg, #7c1c28, #1c060a); --preview-accent: #e0a0a8; }
+.theme-preview { --preview-bg: linear-gradient(150deg, #3f3f46, #27272a); --preview-accent: #a1a1aa; display: flex; min-width: 0; align-items: center; gap: var(--space-4); border: 1px solid color-mix(in srgb, var(--preview-accent) 28%, transparent); border-radius: var(--radius-md); background: rgba(0 0 0 / .3); padding: var(--space-3); }
+.theme-preview-batu-lapuk { --preview-bg: linear-gradient(150deg, #3f3f46, #27272a); --preview-accent: #a1a1aa; }
+.theme-preview-beton-retak { --preview-bg: linear-gradient(150deg, #334155, #1e293b); --preview-accent: #94a3b8; }
+.theme-preview-obsidian-emas { --preview-bg: linear-gradient(145deg, #121216, #09090b); --preview-accent: #fbbf24; }
+.theme-preview-marmer-lumut { --preview-bg: linear-gradient(145deg, #064e3b, #022c22); --preview-accent: #6ee7b7; }
+.theme-preview-y2k-chrome { --preview-bg: linear-gradient(135deg, #e4e4e7, #52525b 48%, #18181b); --preview-accent: #38bdf8; }
+.theme-preview-crimson-velvet { --preview-bg: linear-gradient(145deg, #7f1d1d, #450a0a); --preview-accent: #fda4af; }
 .theme-preview-stone { position: relative; display: grid; width: 64px; height: 78px; flex: 0 0 auto; place-items: center; border: 1px solid var(--preview-accent); border-radius: 32px 32px 4px 4px; background: var(--preview-bg); box-shadow: inset 0 1px 0 rgba(255 255 255 / .18); }
 .theme-preview-crown { position: absolute; top: -8px; color: var(--preview-accent); }
 .theme-preview-copy { display: grid; min-width: 0; gap: 3px; }
@@ -734,5 +747,370 @@ body {
   .story-template-grid { grid-template-columns: 1fr; }
   .story-template-button { width: 100%; }
   .story-preview-canvas { width: min(100%, 230px); }
+}
+
+/* ============================================================
+   GUGUR.RIP — 2.5D memorial park, HUD & monument inspection
+   Pure gradients/static SVG only; GPU work is transform/opacity.
+   ============================================================ */
+:root { --night: rgb(7 7 9); --night-soft: rgb(14 14 18); }
+body { background: radial-gradient(ellipse 90% 60% at 50% -14%, rgb(31 29 35) 0%, rgb(14 13 17) 46%, var(--night) 100%); }
+
+/* Floating exhibition HUD ----------------------------------- */
+.exhibition-hud { position: fixed; z-index: 30; top: 0; right: 0; left: 0; padding-top: 12px; pointer-events: none; }
+.hud-frame { pointer-events: auto; display: flex; min-height: 64px; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid rgba(216 173 105 / .2); border-radius: 18px; background: linear-gradient(120deg, rgba(18 17 21 / .94), rgba(9 9 11 / .84)); box-shadow: 0 18px 52px rgba(0 0 0 / .46), inset 0 1px 0 rgba(255 255 255 / .045); padding: 8px 14px; }
+.hud-identity { display: flex; min-width: 0; align-items: center; gap: 18px; }
+.hud-brand { display: inline-flex; min-width: 0; align-items: center; gap: 10px; color: var(--text); text-decoration: none; }
+.hud-emblem { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid var(--gold); border-radius: 50%; color: var(--gold); font-size: 15px; box-shadow: 0 0 18px rgba(216 173 105 / .18); }
+.hud-brand-copy { display: grid; min-width: 0; gap: 1px; }
+.hud-brand-copy strong { font: 600 13px/1.2 var(--font-space-grotesk), sans-serif; letter-spacing: .2em; }
+.hud-brand-copy small { color: var(--text-muted); font: 400 9px/1.3 var(--font-jetbrains-mono), monospace; }
+.hud-pulse { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 0; color: var(--text-muted); font: 500 10px/1.2 var(--font-jetbrains-mono), monospace; white-space: nowrap; }
+.hud-pulse b { color: #f0dfbb; font-weight: 600; }
+.hud-pulse i { color: rgba(216 173 105 / .6); font-style: normal; }
+.hud-pulse-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px rgba(216 173 105 / .7); animation: hud-pulse 2.6s ease-in-out infinite; }
+@keyframes hud-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+.hud-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
+.hud-bury { border-color: rgba(245 214 156 / .9); background: linear-gradient(180deg, #f3d79c, #d4a85f); color: #17120c; }
+.hud-bury:hover { background: linear-gradient(180deg, #ffe6b4, #e4ba72); }
+.hud-plus { font-size: 15px; font-weight: 700; line-height: 1; }
+.hud-bury-short { display: none; }
+.hud-profile-pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(216 173 105 / .32); border-radius: 999px; background: rgba(216 173 105 / .08); padding: 3px 10px 3px 3px; }
+.hud-profile-name { max-width: 120px; overflow-wrap: anywhere; color: var(--text); font-size: 12px; }
+
+/* Floating command dock ------------------------------------- */
+.hud-dock-wrap { position: fixed; z-index: 35; bottom: 16px; left: 50%; width: min(1200px, calc(100% - 32px)); transform: translateX(-50%); pointer-events: none; }
+.hud-dock { pointer-events: auto; display: flex; min-height: 56px; align-items: center; gap: 10px; border: 1px solid rgba(216 173 105 / .22); border-radius: 18px; background: linear-gradient(120deg, rgba(18 17 21 / .96), rgba(9 9 11 / .9)); box-shadow: 0 20px 56px rgba(0 0 0 / .55), inset 0 1px 0 rgba(255 255 255 / .045); padding: 8px 10px; }
+.hud-dock .chip-rail { flex: 1 1 auto; min-width: 0; }
+.hud-dock .ui-chip { min-height: 32px; padding-inline: 10px; font-size: 12px; }
+.hud-dock-count { color: var(--text-muted); font: 500 10px/1.2 var(--font-jetbrains-mono), monospace; white-space: nowrap; }
+.hud-search-panel { position: absolute; right: 0; bottom: calc(100% + 10px); width: min(320px, 100%); pointer-events: auto; border: 1px solid rgba(216 173 105 / .28); border-radius: 14px; background: rgba(15 14 18 / .97); box-shadow: 0 18px 44px rgba(0 0 0 / .52); padding: 12px; }
+
+/* Ground & horizon architecture ----------------------------- */
+.memorial-section { position: relative; margin-top: var(--space-16); padding-bottom: 132px; isolation: isolate; }
+.grounds-intro { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding-bottom: var(--space-8); }
+.ground-canvas { position: relative; min-height: 760px; padding: var(--space-6) 0 var(--space-12); isolation: isolate; }
+.ground-sky { position: absolute; z-index: -4; top: -120px; right: 0; left: 0; height: 52%; background: radial-gradient(ellipse at 62% 90%, rgba(216 173 105 / .1), transparent 58%), linear-gradient(180deg, rgba(24 24 31 / .7), transparent 82%); pointer-events: none; }
+.ground-moon { position: absolute; z-index: -3; top: 18px; right: 8%; width: 160px; height: 160px; border: 1px solid rgba(232 222 200 / .16); border-radius: 50%; background: radial-gradient(circle at 38% 34%, rgba(236 229 210 / .2), rgba(236 229 210 / .06) 58%, transparent 72%); box-shadow: 0 0 0 22px rgba(236 229 210 / .025), 0 0 0 46px rgba(236 229 210 / .018); pointer-events: none; }
+.ground-horizon { position: absolute; z-index: -2; top: 236px; right: 0; left: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(216 173 105 / .2) 42%, rgba(216 173 105 / .12) 62%, transparent); pointer-events: none; }
+.ground-plane { position: absolute; z-index: -2; right: 0; left: 0; background: repeating-linear-gradient(180deg, transparent 0 112px, rgba(216 173 105 / .035) 113px, transparent 114px); clip-path: polygon(9% 0, 91% 0, 100% 100%, 0 100%); pointer-events: none; }
+.ground-plane-back { top: 250px; height: 520px; opacity: .7; }
+.ground-plane-front { top: 610px; height: 420px; opacity: .45; clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%); background: repeating-linear-gradient(180deg, transparent 0 86px, rgba(148 163 184 / .035) 87px, transparent 88px), linear-gradient(180deg, transparent, rgba(7 7 9 / .6)); }
+.ground-pathways { position: absolute; z-index: -1; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.ground-pathways path { fill: none; stroke-linecap: round; }
+.path-trunk { stroke: rgba(216 173 105 / .16); stroke-width: 26; }
+.path-branch { stroke: rgba(148 163 184 / .12); stroke-width: 16; }
+.ground-flashlight { position: absolute; z-index: 3; inset: 0; background: radial-gradient(280px circle at var(--mouse-x, 50%) var(--mouse-y, 42%), rgba(245 158 11 / .12), transparent 72%); pointer-events: none; will-change: auto; }
+.ground-alert, .ground-empty { max-width: 520px; margin-inline: auto; padding-block: var(--space-12); }
+
+/* Two zones -------------------------------------------------- */
+.memorial-zone { position: relative; z-index: 2; }
+.zone-hill { margin-top: var(--space-8); border: 1px solid rgba(216 173 105 / .14); border-radius: 26px; background: radial-gradient(ellipse at 50% 100%, rgba(216 173 105 / .1), transparent 62%), linear-gradient(180deg, rgba(22 20 24 / .7), rgba(12 11 14 / .32)); padding: var(--space-8) var(--space-6) var(--space-12); }
+.zone-valley { margin-top: var(--space-16); border-radius: 26px; background: radial-gradient(ellipse at 28% 90%, rgba(104 126 92 / .09), transparent 60%); padding: var(--space-8) var(--space-4) var(--space-12); }
+.zone-marker { display: flex; align-items: center; gap: 14px; border-bottom: 1px solid rgba(216 173 105 / .16); margin-bottom: var(--space-8); padding-bottom: var(--space-4); }
+.zone-index { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border: 1px solid rgba(216 173 105 / .45); border-radius: 50%; color: var(--gold); font: 500 11px/1 var(--font-jetbrains-mono), monospace; }
+.zone-copy { min-width: 0; }
+.zone-copy h3 { margin: 0; color: var(--text); font: 600 clamp(1.4rem, 2.6vw, 2rem)/1.15 var(--font-playfair), Georgia, serif; letter-spacing: -.02em; }
+.zone-copy p { margin: 3px 0 0; color: var(--text-muted); font: 400 10px/1.4 var(--font-jetbrains-mono), monospace; }
+.zone-count { margin-left: auto; color: var(--text-muted); font: 500 10px/1.2 var(--font-jetbrains-mono), monospace; white-space: nowrap; }
+.zone-quiet { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text-muted); font-size: 13px; }
+.monument-field { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 18px; row-gap: 48px; align-items: start; content-visibility: auto; contain-intrinsic-size: auto 980px; }
+.monument-skeleton { grid-column: span 4; display: block; min-height: 420px; border: 1px solid rgba(216 173 105 / .1); border-radius: 90px 90px 10px 10px; background: linear-gradient(145deg, rgba(45 43 49 / .8), rgba(20 19 23 / .9)); }
+
+/* Sculptural monoliths --------------------------------------- */
+.monument.tombstone { display: flex; width: 100%; min-width: 0; min-height: 0; flex-direction: column; align-items: center; grid-column: var(--plot-col) / span var(--plot-span); grid-row: auto; margin-top: var(--plot-y); overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; cursor: pointer; transform: scale(var(--plot-scale)); transform-origin: top center; animation: monument-settle .62s var(--ease-standard) both; animation-delay: var(--stagger, 0ms); }
+.monument.tombstone-vip { min-height: 0; box-shadow: none; }
+.monument::before, .monument::after, .monument.tombstone-vip::after { display: none; }
+@keyframes monument-settle { from { opacity: 0; transform: translateY(18px) scale(var(--plot-scale)); } to { opacity: 1; transform: translateY(0) scale(var(--plot-scale)); } }
+.monument:hover, .monument:focus-visible { transform: translateY(-8px) scale(var(--plot-scale)); }
+.monument:active { transform: translateY(-2px) scale(var(--plot-scale)); }
+.monument-highlighted .monument-stone { outline: 1px solid var(--theme-accent); outline-offset: 5px; }
+.monument-soil-shadow { position: absolute; z-index: -1; right: 6%; bottom: 46px; left: 6%; height: 30px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0 0 0 / .68), transparent 72%); pointer-events: none; }
+.monument .tombstone-ground-shadow { right: 10%; bottom: 58px; left: 10%; height: 20px; }
+.monument .tombstone-light { z-index: 5; border-radius: 90px 90px 10px 10px; background: radial-gradient(230px circle at 50% 10%, rgba(255 236 194 / .22), rgba(245 158 11 / .06) 48%, transparent 72%); }
+.monument-pedestal { position: relative; z-index: 0; display: grid; width: min(100%, 360px); justify-items: center; margin-top: -2px; pointer-events: none; }
+.monument-pedestal span { display: block; border-radius: 4px; }
+.monument-pedestal-top { width: 76%; height: 12px; border-top: 1px solid rgba(255 255 255 / .12); background: linear-gradient(180deg, #4a443e, #2a2727); }
+.monument-pedestal-mid { width: 90%; height: 18px; border: 1px solid rgba(216 173 105 / .14); background: linear-gradient(180deg, #39342f, #1c1a1d); }
+.monument-pedestal-base { width: 100%; height: 14px; background: linear-gradient(180deg, #2b282a, #131215); box-shadow: 0 18px 32px rgba(0 0 0 / .5); }
+.monument-landmark .monument-pedestal-mid { border-color: color-mix(in srgb, var(--theme-accent) 46%, transparent); }
+.monument-stone { position: relative; z-index: 1; display: flex; width: 100%; max-width: 320px; min-height: 282px; flex-direction: column; align-items: center; overflow: hidden; border: 1px solid var(--stone-border, #6b6257); border-radius: 50% 50% 8px 8px / 22% 22% 8px 8px; background: var(--stone-bg, linear-gradient(148deg, #8d8172, #3d3834)); box-shadow: var(--stone-shadow, inset 0 2px 0 rgba(255 255 255 / .14), 14px 22px 38px rgba(0 0 0 / .45)); padding: 44px 16px 20px; }
+.monument-landmark .monument-stone { max-width: 344px; min-height: 316px; }
+.monument-stone::before { position: absolute; z-index: 1; inset: 0; background: var(--stone-texture, none); opacity: .52; content: ""; pointer-events: none; }
+.monument-stone::after { display: none; }
+.monument-engraving { position: relative; z-index: 2; display: grid; width: 100%; justify-items: center; gap: 5px; color: var(--tomb-ink); }
+.monument .tombstone-topline { width: 100%; }
+.monument .tombstone-badges { justify-content: flex-start; }
+.monument .tombstone-id { font-size: 9px; }
+.monument-crest { position: absolute; z-index: 4; top: 10px; left: 50%; display: grid; place-items: center; color: var(--theme-accent); transform: translateX(-50%); }
+.monument-ornament { margin: 2px 0; color: var(--theme-accent); opacity: .8; }
+.monument .tombstone-title { display: -webkit-box; min-height: 3.5rem; margin: 0; overflow: hidden; font-size: clamp(1rem, 1.35vw, 1.35rem); line-height: 1.22; text-align: center; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.monument .tombstone-life { display: grid; min-height: 0; margin: 0; gap: 2px; }
+.monument-rule { width: 62%; height: 1px; margin-top: 4px; background: linear-gradient(90deg, transparent, var(--theme-accent), transparent); }
+.monument-offering { position: absolute; z-index: 6; top: 184px; right: -4px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--theme-accent); border-radius: 999px; background: rgba(12 11 14 / .94); color: var(--tomb-ink); padding: 3px 8px; font: 500 10px/1 var(--font-jetbrains-mono), monospace; box-shadow: 0 8px 20px rgba(0 0 0 / .5); }
+.monument-landmark .monument-offering { border-color: var(--gold); background: rgba(42 32 17 / .94); color: #f4e2bd; }
+.monument-condition { display: grid; width: min(100%, 280px); min-height: 28px; align-content: center; margin-top: 10px; }
+.monument-erosion { display: grid; gap: 5px; }
+.monument-erosion-label { display: inline-flex; align-items: center; gap: 5px; color: var(--tomb-ink-muted); font: 400 9px/1.2 var(--font-jetbrains-mono), monospace; }
+.monument-erosion .erosion-track { height: 3px; background: rgba(255 255 255 / .12); }
+.monument .tombstone-eternal { margin: 0; color: var(--theme-accent); font: 500 9px/1.3 var(--font-jetbrains-mono), monospace; }
+.monument-tooltip { position: absolute; z-index: 8; top: 56px; right: 0; left: 0; border: 1px solid rgba(216 173 105 / .32); border-radius: 10px; background: rgba(14 13 16 / .96); box-shadow: 0 14px 34px rgba(0 0 0 / .56); padding: 10px 12px; opacity: 0; pointer-events: none; transform: translateY(6px); transition: opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
+.monument:hover .monument-tooltip, .monument:focus-visible .monument-tooltip { opacity: 1; transform: translateY(0); }
+.monument-tooltip .tombstone-label { color: var(--theme-accent); }
+.monument-tooltip p { display: -webkit-box; margin: 4px 0 0; overflow: hidden; color: var(--text); font-size: 11px; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.monument .tombstone-actions { width: min(100%, 280px); margin-top: 8px; border-top: 0; padding-top: 0; }
+.monument .tombstone-actions .ui-button { min-height: 30px; font-size: 10px; }
+
+/* Six distinct silhouettes/materials (high specificity) ----- */
+/* 1. Batu Lapuk (Free): weathered matte grey stone, flat top */
+article.monument.tombstone.tombstone-theme-batu-lapuk,
+article.monument.tombstone[data-theme="batu-lapuk"] {
+  --theme-accent: #a1a1aa;
+  --tomb-ink: #e4e4e7;
+  --tomb-ink-muted: #a1a1aa;
+  --stone-border: #52525b;
+  --stone-bg: linear-gradient(160deg, #3f3f46 0%, #323238 54%, #27272a 100%);
+  --stone-shadow: inset 0 1px 0 rgba(255 255 255 / .08), inset -12px -10px 26px rgba(0 0 0 / .42), 12px 20px 36px rgba(0 0 0 / .44);
+  --stone-texture: radial-gradient(circle at 20% 25%, rgba(255 255 255 / .055) 0 1.5px, transparent 2px) 0 0 / 16px 16px, radial-gradient(circle at 75% 70%, rgba(0 0 0 / .24) 0 1.5px, transparent 2px) 0 0 / 22px 22px, repeating-linear-gradient(104deg, transparent 0 18px, rgba(255 255 255 / .025) 19px 20px, transparent 21px 36px);
+}
+article.monument.tombstone.tombstone-theme-batu-lapuk .monument-stone {
+  border: 1.5px solid #52525b;
+  border-radius: 10px 10px 4px 4px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-batu-lapuk .tombstone-cap { border-radius: 2px; border-top-color: rgba(161 161 170 / .26); }
+
+/* 2. Beton Retak (Free): cool industrial concrete, brutalist slab */
+article.monument.tombstone.tombstone-theme-beton-retak,
+article.monument.tombstone[data-theme="beton-retak"] {
+  --theme-accent: #94a3b8;
+  --tomb-ink: #e2e8f0;
+  --tomb-ink-muted: #94a3b8;
+  --stone-border: #475569;
+  --stone-bg: linear-gradient(155deg, #334155 0%, #263344 52%, #1e293b 100%);
+  --stone-shadow: inset 0 1px 0 rgba(226 232 240 / .12), inset -14px -10px 30px rgba(0 0 0 / .46), 14px 22px 38px rgba(0 0 0 / .48);
+  --stone-texture: repeating-linear-gradient(90deg, rgba(15 23 42 / .16) 0 1px, transparent 1px 26px), linear-gradient(122deg, transparent 22%, rgba(15 23 42 / .55) 22.3% 22.7%, transparent 23%);
+}
+article.monument.tombstone.tombstone-theme-beton-retak .monument-stone {
+  border: 1.5px solid #475569;
+  border-radius: 2px;
+  clip-path: none;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-beton-retak .monument-pedestal-top { background: linear-gradient(180deg, #334155, #1e293b); }
+article.monument.tombstone.tombstone-theme-beton-retak .monument-pedestal-mid { border-color: rgba(148 163 184 / .28); background: linear-gradient(180deg, #263344, #0f172a); }
+
+/* 3. Obsidian Emas (VIP): pitch-black obsidian, gold double border, halo, crown */
+article.monument.tombstone.tombstone-theme-obsidian-emas,
+article.monument.tombstone[data-theme="obsidian-emas"] {
+  --theme-accent: #fbbf24;
+  --tomb-ink: #fef3c7;
+  --tomb-ink-muted: #fcd34d;
+  --stone-border: #f59e0b;
+  --stone-bg: radial-gradient(circle at 50% 0%, rgba(251 191 36 / .22), transparent 52%), linear-gradient(160deg, #131316 0%, #09090b 48%, #09090b 100%);
+  --stone-shadow: inset 0 0 0 3px #09090b, inset 0 0 0 4.5px #fbbf24, 0 0 35px rgba(245 158 11 / .25), 0 24px 56px rgba(0 0 0 / .78);
+  --stone-texture: repeating-linear-gradient(125deg, transparent 0 42px, rgba(251 191 36 / .075) 43px 43.5px, transparent 44px 86px);
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-stone {
+  border: 2px solid #f59e0b;
+  border-radius: 14px 14px 4px 4px;
+  min-height: 318px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-stone::after {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  inset: 9px;
+  border: 1px solid rgba(251 191 36 / .48);
+  border-radius: 8px 8px 2px 2px;
+  content: "";
+  pointer-events: none;
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-crest {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid #fbbf24;
+  border-radius: 50%;
+  background: #09090b;
+  color: #fbbf24;
+  box-shadow: 0 0 20px rgba(245 158 11 / .5);
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .tombstone-title {
+  color: #fde68a;
+  font-family: var(--font-playfair), Georgia, serif;
+  text-shadow: 0 1px 0 rgba(120 53 15 / .85), 0 0 22px rgba(251 191 36 / .45);
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-pedestal-top { border-top-color: rgba(251 191 36 / .55); background: linear-gradient(180deg, #1c1917, #09090b); }
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-pedestal-mid { border-color: rgba(245 158 11 / .65); background: linear-gradient(180deg, #141210, #09090b); box-shadow: 0 0 24px rgba(245 158 11 / .2); }
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-offering { border-color: #fbbf24; background: #1c1305; color: #fef3c7; }
+
+/* 4. Marmer Lumut (VIP): deep emerald-jade marble, silver/mint veins, emerald glow */
+article.monument.tombstone.tombstone-theme-marmer-lumut,
+article.monument.tombstone[data-theme="marmer-lumut"] {
+  --theme-accent: #6ee7b7;
+  --tomb-ink: #f0fdf4;
+  --tomb-ink-muted: #a7f3d0;
+  --stone-border: #34d399;
+  --stone-bg: radial-gradient(ellipse at 20% 86%, rgba(16 185 129 / .36), transparent 52%), radial-gradient(ellipse at 82% 16%, rgba(167 243 208 / .2), transparent 44%), linear-gradient(150deg, #064e3b 0%, #043b2d 50%, #022c22 100%);
+  --stone-shadow: inset 0 2px 0 rgba(209 250 229 / .28), inset 0 0 28px rgba(16 185 129 / .16), 0 0 36px rgba(16 185 129 / .28), 0 24px 54px rgba(0 0 0 / .64);
+  --stone-texture: linear-gradient(128deg, transparent 15%, rgba(226 232 240 / .28) 15.6% 16.2%, transparent 17% 50%, rgba(167 243 208 / .24) 50.4% 51.1%, transparent 52%), linear-gradient(62deg, transparent 34%, rgba(209 250 229 / .18) 34.4% 35%, transparent 35.8% 72%, rgba(2 44 34 / .65) 72.4% 73%, transparent 74%);
+}
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-stone {
+  border: 2px solid #34d399;
+  border-radius: 46% 46% 10px 10px / 20% 20% 10px 10px;
+  min-height: 318px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-stone::after {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  inset: 8px;
+  border: 1px solid rgba(167 243 208 / .34);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+article.monument.tombstone.tombstone-theme-marmer-lumut .tombstone-title {
+  color: #f8fafc;
+  text-shadow: 0 1px 2px rgba(2 44 34 / .9), 0 0 18px rgba(110 231 183 / .38);
+}
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-pedestal-top { border-top-color: rgba(110 231 183 / .45); background: linear-gradient(180deg, #065f46, #022c22); }
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-pedestal-mid { border-color: rgba(52 211 153 / .5); background: linear-gradient(180deg, #043b2d, #022019); }
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-offering { border-color: #34d399; background: #022c22; color: #ecfdf5; }
+
+/* 5. Y2K Chrome (VIP): liquid chrome metallic gradient, cyan/violet holo rim */
+article.monument.tombstone.tombstone-theme-y2k-chrome,
+article.monument.tombstone[data-theme="y2k-chrome"] {
+  --theme-accent: #38bdf8;
+  --tomb-ink: #ffffff;
+  --tomb-ink-muted: #e0f2fe;
+  --stone-border: #38bdf8;
+  --stone-bg: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 16%, #52525b 42%, #27272a 70%, #18181b 100%);
+  --stone-shadow: inset 0 0 0 2px rgba(168 85 247 / .65), inset 0 1px 0 rgba(255 255 255 / .75), 0 0 32px rgba(56 189 248 / .34), 0 0 46px rgba(168 85 247 / .26), 0 24px 56px rgba(0 0 0 / .7);
+  --stone-texture: linear-gradient(125deg, rgba(255 255 255 / .42) 0%, transparent 24%, rgba(56 189 248 / .22) 48%, rgba(168 85 247 / .26) 66%, transparent 82%), repeating-linear-gradient(90deg, rgba(255 255 255 / .09) 0 1px, transparent 1px 10px);
+}
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-stone {
+  border: 2px solid #38bdf8;
+  border-radius: 4px;
+  min-height: 318px;
+  clip-path: polygon(10% 0, 90% 0, 100% 10%, 100% 100%, 0 100%, 0 10%);
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-engraving {
+  padding: 8px 6px;
+  border-radius: 4px;
+  background: rgba(9 9 11 / .42);
+}
+article.monument.tombstone.tombstone-theme-y2k-chrome .tombstone-title {
+  color: #ffffff;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  letter-spacing: -.03em;
+  text-shadow: 0 2px 10px rgba(9 9 11 / .9), 0 0 16px rgba(56 189 248 / .5);
+}
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-pedestal-top { border-top-color: #38bdf8; background: linear-gradient(90deg, #52525b, #e4e4e7 50%, #3f3f46); }
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-pedestal-mid { border-color: #a855f7; background: linear-gradient(180deg, #27272a, #18181b); box-shadow: 0 0 22px rgba(168 85 247 / .25); }
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-offering { border-color: #38bdf8; background: #18181b; color: #e0f2fe; }
+
+/* 6. Crimson Velvet (VIP): royal blood-crimson, rose-gold border, theatrical aura */
+article.monument.tombstone.tombstone-theme-crimson-velvet,
+article.monument.tombstone[data-theme="crimson-velvet"] {
+  --theme-accent: #fda4af;
+  --tomb-ink: #fff1f2;
+  --tomb-ink-muted: #fecdd3;
+  --stone-border: #fda4af;
+  --stone-bg: radial-gradient(ellipse at 50% 6%, rgba(244 63 94 / .34), transparent 50%), linear-gradient(155deg, #7f1d1d 0%, #5c1010 52%, #450a0a 100%);
+  --stone-shadow: inset 0 2px 0 rgba(254 205 211 / .3), inset 0 0 32px rgba(225 29 72 / .2), 0 0 38px rgba(225 29 72 / .36), 0 24px 56px rgba(0 0 0 / .7);
+  --stone-texture: radial-gradient(circle at 50% 34%, rgba(253 164 175 / .12), transparent 60%), repeating-linear-gradient(112deg, transparent 0 8px, rgba(254 205 211 / .06) 8px 9px, transparent 9px 17px);
+}
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-stone {
+  width: min(100%, 296px);
+  min-height: 318px;
+  border: 2px solid #fda4af;
+  border-radius: 48% 48% 8px 8px / 24% 24% 8px 8px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-stone::after {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  inset: 8px;
+  border: 1px solid rgba(253 164 175 / .4);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+article.monument.tombstone.tombstone-theme-crimson-velvet .tombstone-title {
+  color: #fff1f2;
+  text-shadow: 0 2px 12px rgba(69 10 10 / .9), 0 0 20px rgba(253 164 175 / .4);
+}
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-pedestal-top { border-top-color: rgba(253 164 175 / .5); background: linear-gradient(180deg, #7f1d1d, #450a0a); }
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-pedestal-mid { border-color: rgba(253 164 175 / .52); background: linear-gradient(180deg, #5c1010, #2a0707); }
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-offering { border-color: #fda4af; background: #450a0a; color: #fff1f2; }
+
+/* Theatrical monument inspection drawer --------------------- */
+.inspection-backdrop { place-items: stretch end; padding: 0; background: linear-gradient(90deg, rgba(0 0 0 / .58), rgba(0 0 0 / .86)); }
+.ui-dialog.inspection-dialog { justify-self: end; align-self: stretch; width: min(100%, 560px); height: 100%; max-height: none; border-color: rgba(216 173 105 / .34); border-radius: 24px 0 0 24px; background: linear-gradient(165deg, #19171c, #0b0b0e 62%); padding: var(--space-6); }
+.inspection-plaque { position: relative; display: grid; min-height: 236px; justify-items: center; overflow: hidden; border: 1px solid rgba(216 173 105 / .18); border-radius: 16px; background: radial-gradient(circle at 50% 100%, rgba(216 173 105 / .11), transparent 66%), rgba(0 0 0 / .3); }
+.inspection-plaque-glow { position: absolute; top: -30px; left: 50%; width: 240px; height: 240px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--theme-accent, #d8ad69) 18%, transparent), transparent 70%); transform: translateX(-50%); }
+.inspection-plaque-stone { position: relative; z-index: 1; display: grid; width: min(62%, 210px); min-height: 146px; align-content: center; justify-items: center; margin-top: 16px; border: 2px solid var(--theme-accent, var(--gold)); border-radius: 90px 90px 8px 8px; background: var(--stone-bg, linear-gradient(150deg, #3f3f46, #27272a)); box-shadow: var(--stone-shadow, 0 12px 28px rgba(0 0 0 / .5)); padding: 14px; text-align: center; }
+.inspection-plaque.tombstone-theme-batu-lapuk { --theme-accent: #a1a1aa; --stone-bg: linear-gradient(160deg, #3f3f46, #27272a); }
+.inspection-plaque.tombstone-theme-beton-retak { --theme-accent: #94a3b8; --stone-bg: linear-gradient(155deg, #334155, #1e293b); }
+.inspection-plaque.tombstone-theme-obsidian-emas { --theme-accent: #fbbf24; --stone-bg: linear-gradient(160deg, #131316, #09090b); --stone-shadow: 0 0 32px rgba(245 158 11 / .28); }
+.inspection-plaque.tombstone-theme-marmer-lumut { --theme-accent: #6ee7b7; --stone-bg: linear-gradient(150deg, #064e3b, #022c22); --stone-shadow: 0 0 32px rgba(16 185 129 / .28); }
+.inspection-plaque.tombstone-theme-y2k-chrome { --theme-accent: #38bdf8; --stone-bg: linear-gradient(135deg, #e4e4e7, #52525b 48%, #18181b); --stone-shadow: 0 0 30px rgba(56 189 248 / .34), 0 0 42px rgba(168 85 247 / .24); }
+.inspection-plaque.tombstone-theme-crimson-velvet { --theme-accent: #fda4af; --stone-bg: linear-gradient(155deg, #7f1d1d, #450a0a); --stone-shadow: 0 0 34px rgba(225 29 72 / .34); }
+.inspection-plaque-cap { position: absolute; top: 14px; right: 18px; left: 18px; height: 10px; border-top: 1px solid rgba(255 255 255 / .22); border-radius: 50%; }
+.inspection-plaque-crest { position: absolute; top: 8px; color: var(--theme-accent, var(--gold)); }
+.inspection-plaque-rip { color: var(--tomb-ink, #f4efe6); font: 600 32px/1 var(--font-playfair), Georgia, serif; letter-spacing: .16em; }
+.inspection-plaque-name { display: block; max-width: 100%; margin-top: 6px; overflow: hidden; color: var(--tomb-ink-muted, #c7bba6); font: italic 12px/1.3 var(--font-playfair), Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
+.inspection-plaque-years { margin-top: 5px; color: var(--tomb-ink-muted, #c7bba6); font: 400 9px/1 var(--font-jetbrains-mono), monospace; }
+.inspection-plaque-base { position: relative; z-index: 1; width: min(74%, 250px); height: 12px; border-radius: 3px; background: linear-gradient(180deg, #3a3531, #171518); box-shadow: 0 14px 24px rgba(0 0 0 / .5); }
+
+/* Responsive grounds ---------------------------------------- */
+@media (max-width: 1099px) {
+  .hud-brand-copy small, .hud-pulse { display: none; }
+  .monument-field { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .monument.tombstone { grid-column: auto !important; margin-top: calc(var(--plot-y) * .35); transform: none; animation: none; opacity: 1; }
+  .monument.tombstone:hover, .monument.tombstone:focus-visible { transform: translateY(-6px); }
+  .monument-skeleton { grid-column: auto; }
+}
+@media (max-width: 767px) {
+  .grounds-intro { align-items: flex-start; flex-direction: column; gap: var(--space-4); }
+  .monument-field { grid-template-columns: 1fr; row-gap: var(--space-12); }
+  .monument.tombstone { margin-top: 0; }
+  .zone-hill { padding-inline: var(--space-4); }
+  .zone-valley { padding-inline: var(--space-2); }
+  .zone-marker { flex-wrap: wrap; }
+  .zone-count { margin-left: 0; }
+  .hud-dock-count { display: none; }
+  .inspection-backdrop { place-items: stretch center; }
+  .ui-dialog.inspection-dialog { align-self: end; width: 100%; height: min(90dvh, calc(100dvh - 16px)); border-radius: 20px 20px 0 0; padding: var(--space-5) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 560px) {
+  .hud-profile-name { display: none; }
+  .hud-bury-full { display: none; }
+  .hud-bury-short { display: inline; }
+  .hud-frame { gap: 8px; padding-inline: 10px; }
+  .hud-identity { gap: 8px; }
+  .hud-dock-wrap { width: calc(100% - 20px); bottom: 10px; }
+  .hud-dock { gap: 6px; padding: 6px; }
+  .hud-dock .ui-chip { padding-inline: 8px; font-size: 11px; }
+  .hud-dock .ui-button-label { display: none; }
+  .hud-dock .ui-button { width: 34px; min-width: 34px; padding-inline: 0; }
+  .ground-moon { right: 3%; width: 110px; height: 110px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .monument.tombstone, .monument.tombstone:hover, .monument.tombstone:focus-visible { transform: none !important; animation: none; opacity: 1; }
+  .monument-tooltip { transition: none; }
+  .hud-pulse-dot { animation: none; }
 }
 

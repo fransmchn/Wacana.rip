@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { IconButton } from "./IconButton";
 
-interface DialogProps { open: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; className?: string; }
+interface DialogProps { open: boolean; title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; className?: string; backdropClassName?: string; }
 
 /**
  * Dialog stack: hanya dialog paling atas yang merespons Escape/backdrop, dan
@@ -40,7 +40,7 @@ function isTopDialog(id: string): boolean {
   return dialogStack[dialogStack.length - 1] === id;
 }
 
-export function Dialog({ open, title, onClose, children, footer, className = "" }: DialogProps) {
+export function Dialog({ open, title, onClose, children, footer, className = "", backdropClassName = "" }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -97,7 +97,7 @@ export function Dialog({ open, title, onClose, children, footer, className = "" 
   if (!open) return null;
   return (
     <div
-      className="ui-dialog-backdrop"
+      className={`ui-dialog-backdrop ${backdropClassName}`}
       style={{ zIndex: 50 + depth * 10 }}
       onMouseDown={(event) => { if (event.target === event.currentTarget && isTopDialog(`${titleId}-dialog`)) onCloseRef.current(); }}
     >

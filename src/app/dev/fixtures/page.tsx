@@ -51,8 +51,8 @@ export default function FixturesPage() {
         <p className="mt-2 text-sm text-muted">Data palsu. Tidak memanggil Supabase untuk aksi fixture.</p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Button onClick={() => setModal("profile")}>Edit profil</Button>
-          <Button onClick={() => setModal("bury")}>Kuburkan wacana</Button>
-          <Button onClick={() => setModal("grave")}>Detail makam</Button>
+          <Button onClick={() => setModal("bury")}>Kuburkan Mimpi</Button>
+          <Button onClick={() => setModal("grave")}>Inspeksi Monumen</Button>
           <Button onClick={() => setModal("story")}>Story Studio</Button>
           <Button onClick={() => openCheckout()}>Checkout VIP</Button>
         </div>

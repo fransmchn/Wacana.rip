@@ -9,8 +9,8 @@ const jetBrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jet
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", style: ["normal", "italic"], weight: ["400", "500", "600", "700"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Wacana.rip — TPU Wacana",
-  description: "Tempat peristirahatan terakhir bagi wacana yang tak pernah terjadi.",
+  title: "GUGUR.RIP — Monumen Digital bagi Mimpi yang Gugur",
+  description: "Monumen Digital bagi Mimpi, Skripsi, dan Rencana yang Gugur di Medan Juang.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

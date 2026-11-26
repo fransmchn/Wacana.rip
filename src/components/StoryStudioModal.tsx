@@ -47,7 +47,7 @@ export function StoryStudioModal({ makam, vip, theme, onClose }: StoryStudioModa
       <Button type="button" loading={busy} onClick={() => void download()}><Download size={16} aria-hidden="true" />Unduh Story (1080×1920)</Button>
     </>}>
       <div className="story-studio">
-        <p className="modal-intro">Tiga cara viral untuk mengabadikan wacana ini. Pilih templat, lihat hasilnya, lalu unduh PNG 9:16.</p>
+        <p className="modal-intro">Tiga cara viral untuk mengabadikan monumen ini. Pilih templat, lihat hasilnya, lalu unduh PNG 9:16.</p>
 
         <div className="story-template-grid" role="group" aria-label="Pilih templat story">
           {STORY_TEMPLATES.map((item) => (
@@ -60,7 +60,7 @@ export function StoryStudioModal({ makam, vip, theme, onClose }: StoryStudioModa
 
         <div className="story-preview-wrap">
           <canvas ref={canvasRef} className="story-preview-canvas" role="img" aria-label={`Pratinjau story ${template}`} />
-          <span className="story-preview-caption">{vip ? "Ekspor VIP · branding halus" : "Ekspor gratis · badge WACANA.RIP"}</span>
+          <span className="story-preview-caption">{vip ? "Ekspor VIP · branding halus gugur.rip" : "Ekspor gratis · badge GUGUR.RIP"}</span>
         </div>
       </div>
     </Dialog>

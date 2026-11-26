@@ -37,10 +37,10 @@ export function HeroIllustration({ statistik }: { statistik: Statistik }) {
           <div className="altar-stone" aria-hidden="true">
             <div className="altar-stone-face">
               <Sparkles className="altar-crest" size={22} strokeWidth={1.4} />
-              <p className="altar-kicker">T P U · W A C A N A</p>
+              <p className="altar-kicker">T P U · G U G U R</p>
               <p className="altar-rip">RIP</p>
               <span className="altar-rule" />
-              <p className="altar-name">Wacana</p>
+              <p className="altar-name">Gugur</p>
               <p className="altar-year">EST. 2026</p>
             </div>
           </div>

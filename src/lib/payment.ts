@@ -8,6 +8,7 @@ const TRANSACTION_KEY = "wacana-rip:checkout";
 
 export type PaymentMethod = "qris" | "ewallet";
 export type TransactionStatus = "pending" | "paid" | "failed";
+export type PaymentGatewayMode = "midtrans" | "demo";
 
 /** Satu-satunya kontrak yang dikirim UI ke lapisan pembayaran. */
 export interface CreateCheckoutParams {
@@ -16,8 +17,42 @@ export interface CreateCheckoutParams {
   selectedTheme: NisanTema;
   amount: 15000;
   userId?: string;
+  userEmail?: string;
+  userName?: string;
   method?: PaymentMethod;
   metadata?: { draft?: boolean };
+}
+
+export interface PaymentSessionResponse {
+  mode: PaymentGatewayMode;
+  orderId: string;
+  token?: string;
+  redirect_url?: string;
+}
+
+export interface SnapPayResult {
+  order_id?: string;
+  transaction_status?: string;
+  payment_type?: string;
+  status_message?: string;
+}
+
+interface MidtransSnapGlobal {
+  pay: (
+    token: string,
+    callbacks: {
+      onSuccess?: (result: SnapPayResult) => void;
+      onPending?: (result: SnapPayResult) => void;
+      onError?: (result: SnapPayResult) => void;
+      onClose?: () => void;
+    },
+  ) => void;
+}
+
+declare global {
+  interface Window {
+    snap?: MidtransSnapGlobal;
+  }
 }
 
 export interface PaymentTransaction {
@@ -93,10 +128,111 @@ function saveTransactions(transactions: PaymentTransaction[]): void {
   writeJson(TRANSACTION_KEY, transactions.slice(-20));
 }
 
-/**
- * TODO(gateway): ganti dengan POST /api/checkout (Midtrans/Mayar) dan simpan
- * redirect_url/snap_token di PaymentTransaction. UI tidak perlu diubah.
- */
+/** Muat script Midtrans Snap secara dinamis saat dibutuhkan. */
+export function loadMidtransSnapScript(): Promise<MidtransSnapGlobal> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Midtrans Snap hanya tersedia di browser."));
+  }
+  if (window.snap) return Promise.resolve(window.snap);
+
+  const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY?.trim() ?? "";
+  const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
+  const scriptUrl = isProduction
+    ? "https://app.midtrans.com/snap/snap.js"
+    : "https://app.sandbox.midtrans.com/snap/snap.js";
+
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${scriptUrl}"]`);
+    if (existing) {
+      if (window.snap) { resolve(window.snap); return; }
+      existing.addEventListener("load", () => {
+        if (window.snap) resolve(window.snap);
+        else reject(new Error("Midtrans Snap gagal diinisialisasi."));
+      }, { once: true });
+      existing.addEventListener("error", () => reject(new Error("Gagal memuat script Midtrans Snap.")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = scriptUrl;
+    if (clientKey) script.setAttribute("data-client-key", clientKey);
+    script.async = true;
+    script.onload = () => {
+      if (window.snap) resolve(window.snap);
+      else reject(new Error("Midtrans Snap tidak tersedia setelah script dimuat."));
+    };
+    script.onerror = () => reject(new Error("Gagal memuat Midtrans Snap. Periksa koneksi internet."));
+    document.head.appendChild(script);
+  });
+}
+
+/** Buat sesi transaksi ke Next.js API Route (/api/payment/create). */
+export async function createPaymentSession(params: CreateCheckoutParams): Promise<PaymentSessionResponse> {
+  if (!params.graveId?.trim()) throw new Error("Makam tidak ditemukan.");
+  if (params.amount !== VIP_PRICE) throw new Error("Nominal upgrade tidak valid.");
+
+  const response = await fetch("/api/payment/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      graveId: params.graveId,
+      graveTitle: params.graveTitle,
+      selectedTheme: params.selectedTheme,
+      userEmail: params.userEmail,
+      userName: params.userName,
+      amount: params.amount,
+    }),
+  });
+
+  const data = (await response.json()) as PaymentSessionResponse & { error?: string };
+  if (!response.ok) {
+    throw new Error(data.error || "Gagal memulai sesi pembayaran.");
+  }
+  return data;
+}
+
+/** Buka popup Midtrans Snap dan kembalikan hasil pembayaran. */
+export async function payWithMidtransSnap(token: string): Promise<{ status: "success" | "pending"; result: SnapPayResult }> {
+  const snap = await loadMidtransSnapScript();
+  return new Promise((resolve, reject) => {
+    snap.pay(token, {
+      onSuccess: (result) => resolve({ status: "success", result }),
+      onPending: (result) => resolve({ status: "pending", result }),
+      onError: (result) => reject(new Error(result?.status_message || "Pembayaran Midtrans gagal diproses.")),
+      onClose: () => reject(new Error("Popup pembayaran ditutup sebelum selesai.")),
+    });
+  });
+}
+
+/** Catat transaksi berhasil & aktifkan tema VIP secara lokal. */
+export function recordPaidUpgrade(
+  params: CreateCheckoutParams,
+  orderId: string,
+  method: PaymentMethod = params.method ?? "qris",
+): VipUpgradeResult {
+  const paidAt = new Date().toISOString();
+  const transaction: PaymentTransaction = {
+    id: orderId,
+    status: "paid",
+    method,
+    params: { ...params, method },
+    createdAt: paidAt,
+    paidAt,
+  };
+  saveTransactions([...getTransactions(), transaction]);
+  setThemeOverride(params.graveId, params.selectedTheme);
+  const ids = setVipIds([...getVipIds(), params.graveId]);
+
+  return {
+    graveId: params.graveId,
+    ids,
+    method,
+    receiptId: orderId,
+    paidAt,
+    transaction,
+  };
+}
+
 export async function createCheckout(params: CreateCheckoutParams, method: PaymentMethod = params.method ?? "qris"): Promise<PaymentTransaction> {
   if (!params.graveId?.trim()) throw new Error("Makam tidak ditemukan.");
   if (params.amount !== VIP_PRICE) throw new Error("Nominal upgrade tidak valid.");

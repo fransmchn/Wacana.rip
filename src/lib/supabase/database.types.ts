@@ -27,6 +27,8 @@ export type Database = {
         kerugian_jam: number | null;
         bunga_count: number;
         lilin_count: number;
+        tema?: string | null;
+        is_vip?: boolean | null;
         created_at: string;
       }>;
       bunga: Table<{ id: string; makam_id: string; user_id: string; hari: string; created_at: string }>;

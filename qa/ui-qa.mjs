@@ -54,8 +54,8 @@ for (const viewport of viewports) {
   }
 }
 const fixtureScenarios = [
-  { name: "bury", button: "Kuburkan wacana" },
-  { name: "grave", button: "Detail makam" },
+  { name: "bury", button: "Kuburkan Mimpi" },
+  { name: "grave", button: "Inspeksi Monumen" },
   { name: "story", button: "Story Studio" },
   { name: "checkout", button: "Checkout VIP" },
 ];

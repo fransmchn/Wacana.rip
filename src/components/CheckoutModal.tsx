@@ -1,99 +1,197 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { Check, Crown, QrCode, ShieldCheck, Wallet } from "lucide-react";
+import { useState } from "react";
+import { Check, Crown, QrCode, ShieldCheck, Sparkles } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
-import { VIP_PRICE, type CreateCheckoutParams, type PaymentMethod } from "@/lib/payment";
-import { getTemaNisan } from "@/lib/themes";
+import {
+  createPaymentSession,
+  payWithMidtransSnap,
+  VIP_PRICE,
+  type CreateCheckoutParams,
+  type PaymentGatewayMode,
+  type PaymentMethod,
+} from "@/lib/payment";
+import { getTemaNisan, isTemaVip, VIP_TEMAS } from "@/lib/themes";
 import { formatRupiah } from "@/lib/utils";
+import type { NisanTema } from "@/types/graveyard";
+
+export interface CheckoutConfirmPayload {
+  selectedTheme: NisanTema;
+  orderId: string;
+  method: PaymentMethod;
+  mode: PaymentGatewayMode;
+}
 
 interface CheckoutModalProps {
   params: CreateCheckoutParams;
   onClose: () => void;
-  onConfirm: (method: PaymentMethod) => Promise<void>;
+  onConfirm: (payload: CheckoutConfirmPayload) => Promise<void>;
 }
 
 const BENEFITS = [
-  "Nisan obsidian, marmer, chrome, atau crimson sesuai pilihanmu",
-  "Monumen lebih besar dengan emblem ukiran eksklusif",
-  "Terlindungi permanen dari erosi 7 hari",
-  "Ekspor story premium tanpa watermark besar",
+  "Pilih salah satu dari 4 material nisan VIP eksklusif",
+  "Monumen lebih besar dengan emblem mahkota & aura cahaya",
+  "Terlindungi permanen dari erosi 7 hari (Bukit Kehormatan)",
+  "Ekspor Story Studio premium tanpa watermark besar",
 ];
 
 export function CheckoutModal({ params, onClose, onConfirm }: CheckoutModalProps) {
-  const [method, setMethod] = useState<PaymentMethod>(params.method ?? "qris");
+  const initialTheme: NisanTema = isTemaVip(params.selectedTheme) ? params.selectedTheme : "obsidian-emas";
+  const [selectedTheme, setSelectedTheme] = useState<NisanTema>(initialTheme);
   const [busy, setBusy] = useState(false);
-  const tema = getTemaNisan(params.selectedTheme);
+  const [demoOrderId, setDemoOrderId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const tema = getTemaNisan(selectedTheme);
 
-  async function confirm() {
+  async function handlePayNow() {
     setBusy(true);
-    try { await onConfirm(method); }
-    finally { setBusy(false); }
+    setErrorMessage(null);
+    setStatusMessage(null);
+    try {
+      const session = await createPaymentSession({
+        ...params,
+        selectedTheme,
+        amount: VIP_PRICE,
+      });
+
+      if (session.mode === "demo") {
+        setDemoOrderId(session.orderId);
+        setStatusMessage("Midtrans server key belum diisi di .env. Gunakan Mode Demo di bawah untuk simulasi offline.");
+        return;
+      }
+
+      if (!session.token) {
+        throw new Error("Token Midtrans Snap tidak ditemukan.");
+      }
+
+      const snapOutcome = await payWithMidtransSnap(session.token);
+      if (snapOutcome.status === "pending") {
+        setStatusMessage(`Menunggu penyelesaian pembayaran (${session.orderId}). Status VIP akan aktif otomatis setelah settlement.`);
+        return;
+      }
+
+      const paymentType = snapOutcome.result.payment_type ?? "";
+      const resolvedMethod: PaymentMethod = paymentType.includes("qris") ? "qris" : "ewallet";
+      await onConfirm({
+        selectedTheme,
+        orderId: snapOutcome.result.order_id || session.orderId,
+        method: resolvedMethod,
+        mode: "midtrans",
+      });
+    } catch (reason) {
+      setErrorMessage(reason instanceof Error ? reason.message : "Pembayaran belum berhasil diproses.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDemoBypass() {
+    if (!demoOrderId) return;
+    setBusy(true);
+    setErrorMessage(null);
+    try {
+      await onConfirm({
+        selectedTheme,
+        orderId: demoOrderId,
+        method: "qris",
+        mode: "demo",
+      });
+    } catch (reason) {
+      setErrorMessage(reason instanceof Error ? reason.message : "Aktivasi mode demo gagal.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <Dialog open title="Abadikan wacana" onClose={onClose} className="modal-dialog-wide checkout-dialog" footer={<>
-      <Button type="button" variant="ghost" onClick={onClose}>Batal</Button>
-      <Button type="button" loading={busy} onClick={() => void confirm()}><ShieldCheck size={16} aria-hidden="true" />Simulasi Bayar Berhasil</Button>
-    </>}>
+    <Dialog
+      open
+      title="Abadikan wacana"
+      onClose={onClose}
+      className="modal-dialog-wide checkout-dialog"
+      footer={
+        <div className="checkout-footer-actions">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>Batal</Button>
+          <div className="checkout-footer-primary">
+            {demoOrderId && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                loading={busy}
+                onClick={() => void handleDemoBypass()}
+                className="checkout-demo-bypass"
+              >
+                <Sparkles size={14} aria-hidden="true" />
+                Mode Demo (Bypass Bayar)
+              </Button>
+            )}
+            <Button type="button" loading={busy} onClick={() => void handlePayNow()}>
+              <ShieldCheck size={16} aria-hidden="true" />
+              Bayar Sekarang (QRIS / E-Wallet) — {formatRupiah(VIP_PRICE)}
+            </Button>
+          </div>
+        </div>
+      }
+    >
       <div className="checkout-content">
-        <p className="modal-intro">Satu pembayaran untuk mengunci tema pilihanmu selamanya. Erosi berhenti di sini.</p>
+        <p className="modal-intro">Satu pembayaran untuk mengunci tema VIP pilihanmu selamanya di Bukit Kehormatan.</p>
 
         <div className="checkout-grave">
           <span className="checkout-crest" aria-hidden="true"><Crown size={20} strokeWidth={1.5} /></span>
-          <div><span>Wacana yang diabadikan</span><strong>{params.graveTitle}</strong><small>Tema: {tema.label}</small></div>
+          <div>
+            <span>Wacana yang diabadikan</span>
+            <strong>{params.graveTitle}</strong>
+            <small>Tema terpilih: {tema.label}</small>
+          </div>
         </div>
+
+        <fieldset className="checkout-themes">
+          <legend>Pilih material nisan VIP</legend>
+          <div className="checkout-theme-grid">
+            {VIP_TEMAS.map((item) => {
+              const active = item.id === selectedTheme;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`checkout-theme-card theme-swatch-${item.id} ${active ? "checkout-theme-card-active" : ""}`}
+                  aria-pressed={active}
+                  onClick={() => setSelectedTheme(item.id)}
+                >
+                  <span className="theme-swatch-stone" aria-hidden="true"><Crown size={13} /></span>
+                  <span className="checkout-theme-name">{item.label}</span>
+                  {active && <Check size={14} className="checkout-theme-check" aria-hidden="true" />}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
 
         <ul className="checkout-benefits" aria-label="Keuntungan VIP">
           {BENEFITS.map((benefit) => <li key={benefit}><Check size={14} aria-hidden="true" />{benefit}</li>)}
         </ul>
 
         <div className="checkout-price">
-          <span>Total pembayaran</span>
+          <span>Total pembayaran · Midtrans Snap (QRIS, GoPay, ShopeePay, VA)</span>
           <strong>{formatRupiah(VIP_PRICE)}</strong>
         </div>
 
-        <fieldset className="checkout-methods">
-          <legend>Metode pembayaran</legend>
-          <div className="checkout-method-grid">
-            <MethodOption value="qris" current={method} onSelect={setMethod} icon={<QrCode size={18} aria-hidden="true" />} label="QRIS" detail="Scan dari aplikasi apa saja" />
-            <MethodOption value="ewallet" current={method} onSelect={setMethod} icon={<Wallet size={18} aria-hidden="true" />} label="E-Wallet" detail="GoPay, OVO, DANA" />
-          </div>
-        </fieldset>
+        <div className="checkout-gateway-badge">
+          <QrCode size={16} aria-hidden="true" />
+          <span>Pembayaran aman via Midtrans Snap · QRIS, GoPay, ShopeePay, dan Virtual Account.</span>
+        </div>
 
-        {method === "qris" && <QrPreview />}
+        {statusMessage && (
+          <p role="status" className="status-banner">{statusMessage}</p>
+        )}
 
-        <p className="checkout-note">Ini simulasi. Tidak ada uang yang ditarik dan tidak ada gateway yang dipanggil.</p>
+        {errorMessage && (
+          <p role="alert" className="status-banner status-banner-danger">{errorMessage}</p>
+        )}
       </div>
     </Dialog>
-  );
-}
-
-function MethodOption({ value, current, onSelect, icon, label, detail }: { value: PaymentMethod; current: PaymentMethod; onSelect: (value: PaymentMethod) => void; icon: ReactNode; label: string; detail: string }) {
-  const active = value === current;
-  return (
-    <label className={`checkout-method ${active ? "checkout-method-active" : ""}`}>
-      <input type="radio" name="checkout-method" value={value} checked={active} onChange={() => onSelect(value)} />
-      <span className="checkout-method-icon" aria-hidden="true">{icon}</span>
-      <span className="checkout-method-copy"><strong>{label}</strong><small>{detail}</small></span>
-      {active && <Check size={16} className="checkout-method-check" aria-hidden="true" />}
-    </label>
-  );
-}
-
-/** Visual QR statis untuk pratinjau; bukan kode pembayaran sungguhan. */
-function QrPreview() {
-  const cells = Array.from({ length: 81 }, (_, index) => {
-    const x = index % 9;
-    const y = Math.floor(index / 9);
-    const corner = (x < 3 && y < 3) || (x > 5 && y < 3) || (x < 3 && y > 5);
-    return corner ? ((x % 2 === 0 && y % 2 === 0) || (x === 1 && y === 1)) : ((index * 7 + Math.floor(index / 9) * 3) % 5 < 2);
-  });
-  return (
-    <div className="checkout-qr-preview" aria-hidden="true">
-      <div className="checkout-qr-grid">{cells.map((filled, index) => <span key={index} className={filled ? "is-filled" : ""} />)}</div>
-      <span className="checkout-qr-caption">QRIS · simulasi</span>
-    </div>
   );
 }

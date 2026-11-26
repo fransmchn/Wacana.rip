@@ -51,7 +51,14 @@ export function TombstoneCard({ makam, onSelect, onFlower, flowerStatus, flowerC
       <span className="tombstone-light" aria-hidden="true" />
       <FlowerBurst active={flowerBurst} onDone={() => setFlowerBurst(false)} />
       <div className="tombstone-cap" aria-hidden="true" />
-      {isVip && <div className="tombstone-emblem" aria-hidden="true"><Crown size={18} strokeWidth={1.5} /></div>}
+      {tema.id === "beton-retak" && (
+        <svg className="tombstone-crack-svg" viewBox="0 0 240 320" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M 38 0 L 58 48 L 44 92 L 78 144 L 68 186 L 92 224" fill="none" stroke="rgba(15, 23, 42, 0.72)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 58 48 L 82 64 M 78 144 L 106 156" fill="none" stroke="rgba(15, 23, 42, 0.55)" strokeWidth="1.4" strokeLinecap="round" />
+          <path d="M 205 19 L 181 75 L 193 117 L 165 169" fill="none" stroke="rgba(15, 23, 42, 0.6)" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      )}
+      {isVip && <div className="tombstone-emblem" aria-hidden="true"><Crown size={18} strokeWidth={1.6} /></div>}
       <div className="tombstone-body">
         <div className="tombstone-topline">
           <div className="tombstone-badges"><Badge className="tombstone-badge">{categoryLabel[makam.kategori]}</Badge>{isNew && <Badge className="tombstone-badge">Baru</Badge>}{isVip && <Badge tone="gold" className="tombstone-badge tombstone-badge-vip">Abadi</Badge>}</div>

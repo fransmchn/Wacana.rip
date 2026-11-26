@@ -2,10 +2,29 @@ import { releaseVipId } from "@/lib/payment";
 import { seedData } from "@/lib/seedData";
 import { applyThemeOverrides, getThemeOverride, setThemeOverride } from "@/lib/themeService";
 import { createId } from "@/lib/utils";
-import { DEFAULT_TEMA, getTemaNisan } from "@/lib/themes";
+import { DEFAULT_TEMA, getTemaNisan, isNisanTema } from "@/lib/themes";
 import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
-import { KATEGORI, normalizeKategori, type CreateMakamInput, type EditMakamInput, type KomentarInput, type Komentar, type Makam, type Statistik } from "@/types/graveyard";
+import { KATEGORI, normalizeKategori, type CreateMakamInput, type EditMakamInput, type KomentarInput, type Komentar, type Makam, type NisanTema, type Statistik } from "@/types/graveyard";
+
+/** Pemetaan tema bawaan untuk data seed Supabase yang belum memiliki kolom `tema`. */
+const SEED_THEME_BY_TITLE: Record<string, { tema: NisanTema; vip?: boolean }> = {
+  "analisis sentimen twitter": { tema: "batu-lapuk" },
+  "ganti judul skripsi ke-4": { tema: "beton-retak" },
+  "aplikasi to-do list super canggih": { tema: "obsidian-emas", vip: true },
+  "rewrite semuanya pakai framework baru": { tema: "y2k-chrome", vip: true },
+  "redesign logo yang nggak pernah jadi": { tema: "marmer-lumut", vip: true },
+  "startup marketplace lokal": { tema: "batu-lapuk" },
+  "usaha kopi kekinian": { tema: "beton-retak" },
+  "gym tiap hari 2026": { tema: "crimson-velvet", vip: true },
+};
+
+function isMissingColumnError(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  const code = error.code ?? "";
+  const msg = (error.message ?? "").toLowerCase();
+  return code === "42703" || code === "PGRST204" || msg.includes("column") || msg.includes("schema cache");
+}
 
 export interface BungaHariIni { sudahMenabur: boolean; serverNow: string; berlakuHingga?: string; }
 export class BungaSudahDitaburError extends Error {
@@ -120,6 +139,10 @@ function mapComment(row: KomentarRow): Komentar {
 }
 
 function mapMakam(row: MakamRow, komentar: Komentar[] = []): Makam {
+  const seedHint = SEED_THEME_BY_TITLE[row.judul.trim().toLowerCase()];
+  const dbTema = isNisanTema(row.tema) ? row.tema : undefined;
+  const resolvedTema = getThemeOverride(row.id) ?? dbTema ?? seedHint?.tema ?? DEFAULT_TEMA;
+  const resolvedVip = Boolean(row.is_vip) || Boolean(seedHint?.vip);
   return {
     id: row.id,
     userId: row.user_id ?? undefined,
@@ -135,7 +158,8 @@ function mapMakam(row: MakamRow, komentar: Komentar[] = []): Makam {
     ...(row.kerugian_rupiah === null ? {} : { kerugianRupiah: row.kerugian_rupiah }),
     ...(row.kerugian_jam === null ? {} : { kerugianJam: Number(row.kerugian_jam) }),
     bunga: row.bunga_count,
-    tema: getThemeOverride(row.id) ?? DEFAULT_TEMA,
+    tema: resolvedTema,
+    ...(resolvedVip ? { vip: true } : {}),
     komentar,
     createdAt: row.created_at,
   };
@@ -185,10 +209,7 @@ export async function createMakam(rawInput: CreateMakamInput): Promise<Makam> {
     return makam;
   });
   const userId = await requireUser(client);
-  // `tema` dan `vip` sengaja tidak dikirim: tabel Supabase lama tidak punya
-  // kolom tersebut. Tema disimpan sebagai override lokal setelah insert,
-  // status VIP diverifikasi lewat payment.ts, sehingga insert tetap aman.
-  const result = await client.from("makam").insert({
+  const basePayload = {
     user_id: userId,
     judul: input.judul,
     kategori: input.kategori,
@@ -200,11 +221,21 @@ export async function createMakam(rawInput: CreateMakamInput): Promise<Makam> {
     kerugian_teks: input.kerugianTeks || null,
     kerugian_rupiah: input.kerugianRupiah ?? null,
     kerugian_jam: input.kerugianJam ?? null,
+  };
+  // Coba simpan `tema` & `is_vip` ke Supabase terlebih dahulu; jika schema remote
+  // belum punya kolom tersebut, fallback otomatis ke payload dasar tanpa gagal.
+  let result = await client.from("makam").insert({
+    ...basePayload,
+    tema: input.tema,
+    is_vip: Boolean(input.vip),
   }).select("*").single();
+  if (isMissingColumnError(result.error)) {
+    result = await client.from("makam").insert(basePayload).select("*").single();
+  }
   throwSupabase(result.error);
   if (!result.data) throw new Error("Supabase tidak mengembalikan makam baru.");
   setThemeOverride(result.data.id, input.tema);
-  return mapMakam(result.data);
+  return { ...mapMakam(result.data), tema: input.tema, ...(input.vip ? { vip: true } : {}) };
 }
 
 /** Makam milik pengguna. Mode lokal memakai semua data demo sebagai "milik saya". */
@@ -233,21 +264,47 @@ export async function updateMakam(id: string, rawInput: EditMakamInput, userId?:
   if (!input.epitaph) throw new Error("Kata terakhir wajib diisi.");
 
   const client = supabase();
-  if (!client) return localFallback(() => updateLocal(id, (makam) => ({ ...makam, ...input })));
-  // Sama seperti create: hanya kolom lama yang dikirim. Tema baru dipasang
-  // setelah update berhasil agar override tidak tersimpan saat update gagal.
-  let query = client.from("makam").update({
+  if (!client) return localFallback(() => {
+    setThemeOverride(id, input.tema);
+    return updateLocal(id, (makam) => ({ ...makam, ...input }));
+  });
+  const baseUpdate = {
     judul: input.judul,
     kategori: input.kategori,
     penyebab: input.penyebab,
     epitaph: input.epitaph,
-  }).eq("id", id);
+  };
+  let query = client.from("makam").update({ ...baseUpdate, tema: input.tema }).eq("id", id);
   if (userId) query = query.eq("user_id", userId);
-  const result = await query.select("*").maybeSingle();
+  let result = await query.select("*").maybeSingle();
+  if (isMissingColumnError(result.error)) {
+    let fallbackQuery = client.from("makam").update(baseUpdate).eq("id", id);
+    if (userId) fallbackQuery = fallbackQuery.eq("user_id", userId);
+    result = await fallbackQuery.select("*").maybeSingle();
+  }
   throwSupabase(result.error);
   if (!result.data) throw new Error("Makam tidak ditemukan atau bukan milikmu.");
   setThemeOverride(id, input.tema);
-  return mapMakam(result.data, await getRemoteComments(client, id));
+  return { ...mapMakam(result.data, await getRemoteComments(client, id)), tema: input.tema };
+}
+
+/** Sinkronkan upgrade VIP & tema ke Supabase (graceful jika kolom belum ada) serta localStorage. */
+export async function persistVipUpgrade(id: string, tema: NisanTema): Promise<void> {
+  setThemeOverride(id, tema);
+  const client = supabase();
+  if (!client) {
+    try { updateLocal(id, (makam) => ({ ...makam, tema, vip: true })); } catch { /* draft id belum tersimpan lokal */ }
+    return;
+  }
+  if (id.startsWith("draft-")) return;
+  try {
+    const result = await client.from("makam").update({ tema, is_vip: true }).eq("id", id);
+    if (result.error && !isMissingColumnError(result.error)) {
+      console.warn("[gugur.rip] Gagal menyinkronkan VIP ke Supabase:", result.error.message);
+    }
+  } catch {
+    /* Tetap aman memakai localStorage override */
+  }
 }
 
 export async function taburBunga(id: string): Promise<Makam> {

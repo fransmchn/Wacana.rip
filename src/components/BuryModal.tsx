@@ -50,7 +50,7 @@ export function BuryModal({ onClose, onSubmit, onCreated, vipUnlocked, onVipThem
 
   function validate(): FieldErrors {
     const next: FieldErrors = {};
-    if (!form.judul.trim()) next.judul = "Nama wacana wajib diisi.";
+    if (!form.judul.trim()) next.judul = "Nama mimpi wajib diisi.";
     if (!form.tanggalMulai) next.tanggalMulai = "Tanggal mulai wajib diisi.";
     if (!form.tanggalMenyerah) next.tanggalMenyerah = "Tanggal menyerah wajib diisi.";
     if (form.tanggalMulai && form.tanggalMenyerah && form.tanggalMenyerah < form.tanggalMulai) next.tanggalMenyerah = "Tanggal gugur tidak boleh sebelum tanggal lahir.";
@@ -66,7 +66,7 @@ export function BuryModal({ onClose, onSubmit, onCreated, vipUnlocked, onVipThem
 
   function mapSubmitError(reason: unknown): FieldErrors {
     const message = reason instanceof Error ? reason.message : "Ritual gagal dilakukan.";
-    if (message.includes("Nama wacana")) return { judul: message };
+    if (message.includes("Nama mimpi")) return { judul: message };
     if (message.includes("Tanggal mulai")) return { tanggalMulai: message };
     if (message.includes("Tanggal")) return { tanggalMenyerah: message };
     if (message.includes("Penyebab")) return { penyebab: message };
@@ -86,18 +86,18 @@ export function BuryModal({ onClose, onSubmit, onCreated, vipUnlocked, onVipThem
     finally { setSaving(false); }
   }
 
-  return <Dialog open title="Kuburkan wacana" onClose={close} className="modal-dialog-wide" footer={<>
+  return <Dialog open title="Kuburkan Mimpi" onClose={close} className="modal-dialog-wide" footer={<>
     <Button type="button" variant="ghost" onClick={close}>Batal</Button>
     <Button className="modal-action-primary" type="submit" form="bury-form" loading={saving}>
-      {needsVip ? <><Crown size={16} aria-hidden="true" />Buka Semua Tema &amp; Abadikan (VIP - Rp 15.000)</> : saving ? "Menurunkan nisan..." : "Kuburkan wacana"}
+      {needsVip ? <><Crown size={16} aria-hidden="true" />Buka Semua Tema &amp; Abadikan (VIP - Rp 15.000)</> : saving ? "Menurunkan nisan..." : "Kuburkan Mimpi"}
     </Button>
   </>}>
     <form id="bury-form" className="modal-form" onSubmit={(event) => void submit(event)}>
       <p className="modal-intro">Beri tempat layak bagi sesuatu yang pernah kamu perjuangkan.</p>
-      <Input data-autofocus required label="Nama wacana / judul" value={form.judul} maxLength={120} onChange={(event) => set("judul", event.target.value)} placeholder="Contoh: Aplikasi yang mengubah hidup" error={errors.judul} counter={`${form.judul.length}/120`} />
+      <Input data-autofocus required label="Nama mimpi / judul" value={form.judul} maxLength={120} onChange={(event) => set("judul", event.target.value)} placeholder="Contoh: Aplikasi yang mengubah hidup" error={errors.judul} counter={`${form.judul.length}/120`} />
       <div className="modal-form-grid"><Select label="Kategori" value={form.kategori} onChange={(event) => set("kategori", event.target.value as Kategori)}>{Object.entries(categoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</Select><Input label="Nama pembuat" maxLength={30} value={form.pembuat} onChange={(event) => set("pembuat", event.target.value)} placeholder="Anonim" /></div>
       <div className="modal-form-grid"><Input label="Tanggal mulai" type="date" required max={form.tanggalMenyerah || today()} value={form.tanggalMulai} onChange={(event) => set("tanggalMulai", event.target.value)} error={errors.tanggalMulai} /><Input label="Tanggal menyerah" type="date" required max={today()} min={form.tanggalMulai} value={form.tanggalMenyerah} onChange={(event) => set("tanggalMenyerah", event.target.value)} error={errors.tanggalMenyerah} /></div>
-      <div className="modal-age-note"><CalendarDays size={16} aria-hidden="true" /><span>Umur wacana: <strong>{getLabelDurasi(durasi)}</strong></span></div>
+      <div className="modal-age-note"><CalendarDays size={16} aria-hidden="true" /><span>Umur mimpi: <strong>{getLabelDurasi(durasi)}</strong></span></div>
       <Textarea label="Kenapa berakhir" required maxLength={160} rows={3} value={form.penyebab} onChange={(event) => set("penyebab", event.target.value)} placeholder="Contoh: kami memilih jalan masing-masing" error={errors.penyebab} helperText={`${form.penyebab.length}/160`} />
       <Input label="Kata terakhir" required maxLength={140} value={form.epitaph} onChange={(event) => set("epitaph", event.target.value)} placeholder="Satu kalimat untuk dikenang" error={errors.epitaph} counter={`${form.epitaph.length}/140`} />
       <section className={`loss-panel ${showLoss ? "loss-panel-active" : ""}`} aria-labelledby="loss-title"><div className="loss-panel-heading"><div><h3 id="loss-title">Catat kerugian</h3><p>Opsional: biaya, waktu, atau hal lain yang ikut hilang.</p></div><label className="loss-toggle"><input type="checkbox" checked={showLoss} onChange={(event) => { setShowLoss(event.target.checked); if (!event.target.checked) { set("kerugianTeks", undefined); set("kerugianRupiah", undefined); set("kerugianJam", undefined); } }} /><span aria-hidden="true"><Check size={14} /></span><span className="sr-only">Aktifkan pencatatan kerugian</span></label></div>{showLoss && <div className="modal-form-grid modal-form-grid-three"><Input label="Catatan" value={form.kerugianTeks ?? ""} onChange={(event) => set("kerugianTeks", event.target.value)} placeholder="Kopi, waktu, harapan" /><Input label="Rupiah" type="number" min="0" value={form.kerugianRupiah ?? ""} onChange={(event) => set("kerugianRupiah", event.target.value ? Number(event.target.value) : undefined)} placeholder="150000" error={errors.kerugianRupiah} /><Input label="Jam" type="number" min="0" value={form.kerugianJam ?? ""} onChange={(event) => set("kerugianJam", event.target.value ? Number(event.target.value) : undefined)} placeholder="24" error={errors.kerugianJam} /></div>}</section>

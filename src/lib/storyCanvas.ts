@@ -7,7 +7,7 @@ export type StoryTemplate = "struk" | "breaking" | "shrine";
 export const STORY_TEMPLATES: Array<{ id: StoryTemplate; label: string; hint: string }> = [
   { id: "struk", label: "Struk Kegagalan", hint: "Receipt viral" },
   { id: "breaking", label: "Breaking News / Headline Meme", hint: "Headline meme" },
-  { id: "shrine", label: "Dark Aesthetic / Minimalist Shrine", hint: "Aesthetic + tema" },
+  { id: "shrine", label: "Dark Monument Shrine", hint: "Aesthetic + tema" },
 ];
 
 export interface StoryRenderOptions {
@@ -47,7 +47,7 @@ export async function downloadStoryPng(makam: Makam, options: StoryRenderOptions
   const canvas = document.createElement("canvas");
   await renderStoryCanvas(canvas, makam, options, 1);
   const link = document.createElement("a");
-  link.download = `wacana-story-${options.template}-${makam.id.slice(-8)}.png`;
+  link.download = `gugur-story-${options.template}-${makam.id.slice(-8)}.png`;
   link.href = canvas.toDataURL("image/png");
   document.body.appendChild(link);
   link.click();
@@ -80,7 +80,7 @@ function drawStruk(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRe
   setFont(ctx, fonts.mono, 34, "600");
   ctx.fillStyle = "#2a2521";
   ctx.letterSpacing = "9px";
-  ctx.fillText("WACANA.RIP", W / 2, 250);
+  ctx.fillText("GUGUR.RIP", W / 2, 250);
   ctx.letterSpacing = "0px";
   setFont(ctx, fonts.mono, 23, "500");
   ctx.fillStyle = "#6f665c";
@@ -147,13 +147,13 @@ function drawBreaking(ctx: CanvasRenderingContext2D, makam: Makam, options: Stor
   ctx.fillText("BREAKING!", 64, 106);
   setFont(ctx, fonts.mono, 20, "500");
   ctx.textAlign = "right";
-  ctx.fillText("EDISI TPU · WACANA.RIP", W - 64, 100);
+  ctx.fillText("EDISI TPU · GUGUR.RIP", W - 64, 100);
   divider(ctx, 64, W - 64, 190, "rgba(255 255 255 / .16)");
 
   ctx.textAlign = "center";
   setFont(ctx, fonts.serif, 74, "700");
   ctx.fillStyle = "#fff3e8";
-  wrap(ctx, "WACANA RESMI MENINGGAL DUNIA", W - 130, 3).forEach((line, index) => ctx.fillText(line, W / 2, 320 + index * 88));
+  wrap(ctx, "MIMPI RESMI GUGUR DI MEDAN JUANG", W - 130, 3).forEach((line, index) => ctx.fillText(line, W / 2, 320 + index * 88));
 
   ctx.fillStyle = "#171319";
   roundRect(ctx, 80, 620, W - 160, 300, 8);
@@ -234,7 +234,7 @@ function drawShrine(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryR
   setFont(ctx, fonts.mono, 20, "500");
   ctx.fillStyle = palet.accent;
   ctx.letterSpacing = "8px";
-  ctx.fillText("TPU · WACANA", W / 2, 170);
+  ctx.fillText("TPU · GUGUR", W / 2, 170);
   ctx.letterSpacing = "0px";
 
   ctx.beginPath();
@@ -304,7 +304,7 @@ function drawBranding(ctx: CanvasRenderingContext2D, vip: boolean, color: string
     ctx.globalAlpha = 0.55;
     ctx.fillStyle = color;
     ctx.letterSpacing = "4px";
-    ctx.fillText("wacana.rip", W / 2, 1824);
+    ctx.fillText("gugur.rip", W / 2, 1824);
     ctx.letterSpacing = "0px";
     ctx.globalAlpha = 1;
     return;
@@ -312,7 +312,7 @@ function drawBranding(ctx: CanvasRenderingContext2D, vip: boolean, color: string
   setFont(ctx, fonts.mono, 20, "600");
   ctx.fillStyle = color;
   ctx.letterSpacing = "3px";
-  ctx.fillText("Dibuat di WACANA.RIP", W / 2, 1824);
+  ctx.fillText("Dibuat di GUGUR.RIP", W / 2, 1824);
   ctx.letterSpacing = "0px";
 }
 

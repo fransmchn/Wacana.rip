@@ -5,6 +5,7 @@ import type { ErosionInfo } from "@/lib/utils";
 import { TombstoneCard } from "@/components/TombstoneCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { resolveTheme } from "@/lib/themeService";
 
 interface TombstoneGridProps {
   makam: Makam[];
@@ -53,7 +54,7 @@ export function TombstoneGrid({ makam, loading = false, hasFilter = false, error
   return (
     <div className="graveyard-plots">
       {makam.map((item, index) => (
-        <div key={item.id} className="grave-plot" style={plotStyle(index)}>
+        <div key={item.id} className="grave-plot" data-theme={resolveTheme(item)} style={plotStyle(index)}>
           <TombstoneCard
             makam={item}
             onSelect={onSelect}

@@ -15,7 +15,7 @@ export function StatsBanner({ statistik }: StatsBannerProps) {
   const inView = useInView(ref, { once: true, margin: "-60px" });
   const reducedMotion = useReducedMotion();
   const items = [
-    { label: "Wacana terkubur", value: statistik.totalMakam, full: statistik.totalMakam.toLocaleString("id-ID"), icon: Landmark, compact: false },
+    { label: "Mimpi gugur", value: statistik.totalMakam, full: statistik.totalMakam.toLocaleString("id-ID"), icon: Landmark, compact: false },
     { label: "Bunga ditaburkan", value: statistik.totalBunga, full: statistik.totalBunga.toLocaleString("id-ID"), icon: Flower2, compact: false },
     { label: "Kerugian tercatat", value: statistik.totalRupiah, full: new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(statistik.totalRupiah), icon: WalletCards, compact: true },
     { label: "Jam terbuang", value: statistik.totalJam, full: `${statistik.totalJam.toLocaleString("id-ID")} jam`, icon: Clock3, compact: false, suffix: " jam" },
@@ -23,7 +23,7 @@ export function StatsBanner({ statistik }: StatsBannerProps) {
 
   return (
     <div ref={ref} className="altar-plaques" role="group" aria-label="Statistik pemakaman">
-      <h2 className="sr-only">Statistik TPU Wacana</h2>
+      <h2 className="sr-only">Statistik TPU Gugur</h2>
       {items.map(({ label, value, full, icon: Icon, compact, suffix }) => (
         <div key={label} className="plaque">
           <span className="plaque-icon"><Icon size={14} aria-hidden="true" /></span>

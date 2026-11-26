@@ -25,6 +25,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { createMakam, hapusMakam, listMakamSaya, updateMakam } from "@/lib/graveyardService";
 import { createDraftGrave, replaceVipId } from "@/lib/payment";
 import { resolveTheme } from "@/lib/themeService";
+import { getTemaNisan } from "@/lib/themes";
 import { formatCompactRupiah, formatKerugian, formatRupiahLengkap, formatTanggal, getErosionInfo, getTierDuka } from "@/lib/utils";
 import type { CreateMakamInput, EditMakamInput, Kategori, Makam } from "@/types/graveyard";
 
@@ -86,6 +87,7 @@ export default function ProfilePage() {
   }), { dikubur: 0, kerugian: 0, bunga: 0, vip: 0 }), [graves, isVip]);
 
   const filtered = useMemo(() => graves.filter((grave) => {
+    if (filter === "semua") return true;
     const vip = isVip(grave);
     if (filter === "vip") return vip;
     if (vip) return false;
@@ -105,7 +107,7 @@ export default function ProfilePage() {
     setGraves((current) => [created, ...current]);
     setBuryOpen(false);
     setFilter("semua");
-    if (!options.silent) toast("Wacana berhasil dikubur di petakmu.", "success");
+    if (!options.silent) toast("Mimpi berhasil dikubur di petakmu.", "success");
     return created;
   }
 
@@ -119,7 +121,8 @@ export default function ProfilePage() {
       selectedTheme: input.tema,
       userId: ownerId,
       onPaid: async (result) => {
-        const created = await persistGrave(input, { silent: true, vip: true });
+        const chosenTheme = result.transaction.params.selectedTheme;
+        const created = await persistGrave({ ...input, tema: chosenTheme }, { silent: true, vip: true });
         replaceVipId(result.graveId, created.id);
         await load();
         afterCreate(created);
@@ -138,8 +141,9 @@ export default function ProfilePage() {
     requestUpgrade(target, {
       selectedTheme: input.tema,
       userId: ownerId,
-      onPaid: async () => {
-        const updated = await updateMakam(target.id, input, ownerId);
+      onPaid: async (result) => {
+        const chosenTheme = result.transaction.params.selectedTheme;
+        const updated = await updateMakam(target.id, { ...input, tema: chosenTheme }, ownerId);
         setGraves((current) => current.map((grave) => grave.id === updated.id ? updated : grave));
         setEditTarget(null);
         await load();
@@ -172,12 +176,12 @@ export default function ProfilePage() {
 
         <section className="profile-hero" aria-labelledby="profile-title">
           <div className="profile-identity">
-            <p className="eyebrow">Arsip pribadi · TPU Wacana</p>
+            <p className="eyebrow">Arsip pribadi · TPU Gugur</p>
             <h1 id="profile-title" className="text-display">Petak milik {profile?.name ?? "penjaga TPU"}.</h1>
-            <p className="section-whisper">Semua wacana yang pernah kamu kubur, berikut keadaan nisannya hari ini.</p>
+            <p className="section-whisper">Semua mimpi yang pernah kamu kubur, berikut keadaan monumnya hari ini.</p>
           </div>
           <div className="profile-hero-actions">
-            {needLogin ? <Button onClick={() => setLoginOpen(true)}>Masuk untuk mengelola</Button> : <Button onClick={openBury}><Plus size={17} aria-hidden="true" />Kuburkan wacana</Button>}
+            {needLogin ? <Button onClick={() => setLoginOpen(true)}>Masuk untuk mengelola</Button> : <Button onClick={openBury}><Plus size={17} aria-hidden="true" />Kuburkan Mimpi</Button>}
           </div>
         </section>
 
@@ -186,7 +190,7 @@ export default function ProfilePage() {
 
         <section className="profile-summary" aria-label="Ringkasan profil">
           {showSkeleton ? Array.from({ length: 5 }, (_, index) => <div key={index} className="summary-stat"><Skeleton className="skeleton-stat-label" /><Skeleton className="skeleton-stat-value" /></div>) : <>
-            <StatCard label="Total wacana dikubur" value={String(stats.dikubur)} note="petak terisi" icon={<Flower2 size={16} />} />
+            <StatCard label="Total mimpi dikubur" value={String(stats.dikubur)} note="petak terisi" icon={<Flower2 size={16} />} />
             <StatCard label="Total kerugian tercatat" value={formatCompactRupiah(stats.kerugian)} note={stats.kerugian ? formatRupiahLengkap(stats.kerugian) : "belum dihitung"} icon={<Hourglass size={16} />} />
             <StatCard label="Total bunga diterima" value={String(stats.bunga)} note="taburan dari pengunjung" icon={<Flower2 size={16} />} />
             <StatCard label="Peringkat Duka" value={getTierDuka(stats.dikubur, stats.bunga, stats.vip)} note={`${stats.bunga} taburan · ${stats.vip} abadi`} icon={<Sparkles size={16} />} />
@@ -210,7 +214,7 @@ export default function ProfilePage() {
 
           {showSkeleton ? <div className="my-grave-list">{[0, 1].map((index) => <div key={index} className="my-grave my-grave-skeleton"><Skeleton className="skeleton-grave-title" /><Skeleton className="skeleton-grave-line" /><Skeleton className="skeleton-grave-line-short" /></div>)}</div> : null}
 
-          {!showSkeleton && graves.length === 0 && <EmptyState icon={<Flower2 size={20} aria-hidden="true" />} title="Belum ada wacana yang dikubur" description="Petakmu masih kosong. Kuburkan wacana pertama dan beri dia tempat untuk pulang." actionLabel="Kuburkan wacana pertama" onAction={() => requireLogin(() => setBuryOpen(true))} />}
+          {!showSkeleton && graves.length === 0 && <EmptyState icon={<Flower2 size={20} aria-hidden="true" />} title="Belum ada mimpi yang dikubur" description="Petakmu masih kosong. Kuburkan mimpi pertama dan beri dia tempat untuk pulang." actionLabel="Kuburkan mimpi pertama" onAction={() => requireLogin(() => setBuryOpen(true))} />}
 
           {!showSkeleton && graves.length > 0 && filtered.length === 0 && <EmptyState icon={<Hourglass size={20} aria-hidden="true" />} title="Tidak ada makam di kategori ini" description="Coba filter lain untuk melihat petak yang masih tersimpan." actionLabel="Lihat semua makam" onAction={() => setFilter("semua")} />}
 
@@ -229,7 +233,7 @@ export default function ProfilePage() {
                 <p className="my-grave-epitaph">“{grave.epitaph}”</p>
                 <dl className="my-grave-meta">
                   <div><dt>Bunga</dt><dd>{grave.bunga}</dd></div>
-                  <div><dt>Nisan</dt><dd>{resolveTheme(grave).replaceAll("-", " ")}</dd></div>
+                  <div><dt>Nisan</dt><dd>{getTemaNisan(resolveTheme(grave)).label}</dd></div>
                   <div><dt>Kerugian</dt><dd>{formatKerugian(grave)}</dd></div>
                 </dl>
                 {!vip && <div className="my-grave-erosion"><div className="erosion-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={info.progress} aria-label={info.label}><span style={{ width: `${info.progress}%` }} /></div><span>{info.progress}% erosi</span></div>}

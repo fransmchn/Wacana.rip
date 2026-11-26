@@ -22,6 +22,8 @@ create table if not exists public.makam (
   kerugian_jam numeric check (kerugian_jam >= 0),
   bunga_count integer not null default 0 check (bunga_count >= 0),
   lilin_count integer not null default 0 check (lilin_count >= 0),
+  tema text not null default 'batu-lapuk',
+  is_vip boolean not null default false,
   created_at timestamptz not null default now()
 );
 
