@@ -27,10 +27,10 @@ export function ExhibitionHUD({ statistik, profile, profileMenuOpen = false, onB
     <header className="exhibition-hud">
       <div className="hud-frame container-shell">
         <div className="hud-identity">
-          <a href="#main" className="hud-brand" aria-label="GUGUR.RIP — kembali ke atas">
+          <a href="#main" className="hud-brand" aria-label="GRAVEYARD — kembali ke atas">
             <span className="hud-emblem" aria-hidden="true">✦</span>
             <span className="hud-brand-copy">
-              <strong>GUGUR.RIP</strong>
+              <strong>GRAVEYARD</strong>
               <small>Monumen Digital bagi Mimpi, Skripsi, dan Rencana yang Gugur di Medan Juang</small>
             </span>
           </a>

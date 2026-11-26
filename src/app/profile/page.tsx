@@ -176,8 +176,8 @@ export default function ProfilePage() {
 
         <section className="profile-hero" aria-labelledby="profile-title">
           <div className="profile-identity">
-            <p className="eyebrow">Arsip pribadi · TPU Gugur</p>
-            <h1 id="profile-title" className="text-display">Petak milik {profile?.name ?? "penjaga TPU"}.</h1>
+            <p className="eyebrow">Arsip pribadi · GRAVEYARD</p>
+            <h1 id="profile-title" className="text-display">Petak milik {profile?.name ?? "penjaga GRAVEYARD"}.</h1>
             <p className="section-whisper">Semua mimpi yang pernah kamu kubur, berikut keadaan monumnya hari ini.</p>
           </div>
           <div className="profile-hero-actions">

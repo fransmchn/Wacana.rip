@@ -9,8 +9,13 @@ const jetBrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jet
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", style: ["normal", "italic"], weight: ["400", "500", "600", "700"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "GUGUR.RIP — Monumen Digital bagi Mimpi yang Gugur",
+  title: "GRAVEYARD — Monumen Digital bagi Mimpi yang Gugur",
   description: "Monumen Digital bagi Mimpi, Skripsi, dan Rencana yang Gugur di Medan Juang.",
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

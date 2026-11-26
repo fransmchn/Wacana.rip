@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     const safeSuffix = graveId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 6) || "VIP";
-    const orderId = `GUGUR-${Date.now()}-${safeSuffix}`;
+    const orderId = `GRAVEYARD-${Date.now()}-${safeSuffix}`;
 
     const serverKey = process.env.MIDTRANS_SERVER_KEY?.trim();
     if (!serverKey) {
@@ -61,8 +61,8 @@ export async function POST(request: Request) {
         },
       ],
       customer_details: {
-        first_name: (body.userName?.trim() || "Peziarah GUGUR.RIP").slice(0, 50),
-        email: body.userEmail?.trim() || "peziarah@gugur.rip",
+        first_name: (body.userName?.trim() || "Peziarah GRAVEYARD").slice(0, 50),
+        email: body.userEmail?.trim() || "peziarah@graveyard.rip",
       },
       custom_field1: graveId,
       custom_field2: selectedTheme,

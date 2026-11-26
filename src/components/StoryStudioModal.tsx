@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Download, Landmark, ReceiptText, Sparkles } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -25,7 +25,7 @@ export function StoryStudioModal({ makam, vip, theme, onClose }: StoryStudioModa
     const canvas = canvasRef.current;
     if (!canvas) return;
     let cancelled = false;
-    void renderStoryCanvas(canvas, makam, { template, vip, theme }, 0.25).catch(() => {
+    void renderStoryCanvas(canvas, makam, { template, vip, theme }, 0.5).catch(() => {
       if (!cancelled) toast("Pratinjau story gagal dirender.", "danger");
     });
     return () => { cancelled = true; };
@@ -47,20 +47,24 @@ export function StoryStudioModal({ makam, vip, theme, onClose }: StoryStudioModa
       <Button type="button" loading={busy} onClick={() => void download()}><Download size={16} aria-hidden="true" />Unduh Story (1080×1920)</Button>
     </>}>
       <div className="story-studio">
-        <p className="modal-intro">Tiga cara viral untuk mengabadikan monumen ini. Pilih templat, lihat hasilnya, lalu unduh PNG 9:16.</p>
+        <p className="modal-intro">Tiga templat viral 9:16 untuk dibagikan ke Instagram Story. Pilih gaya, tinjau hasilnya, lalu unduh PNG tajam 1080×1920.</p>
 
         <div className="story-template-grid" role="group" aria-label="Pilih templat story">
           {STORY_TEMPLATES.map((item) => (
             <button key={item.id} type="button" className={`story-template-button ${template === item.id ? "story-template-active" : ""}`} aria-pressed={template === item.id} onClick={() => setTemplate(item.id)}>
-              <span className="story-template-icon" aria-hidden="true">{item.id === "struk" ? <ImageIcon size={15} /> : item.id === "breaking" ? <Sparkles size={15} /> : "✦"}</span>
+              <span className="story-template-icon" aria-hidden="true">
+                {item.id === "struk" ? <ReceiptText size={15} /> : item.id === "editorial" ? <Sparkles size={15} /> : <Landmark size={15} />}
+              </span>
               <span><strong>{item.label}</strong><small>{item.hint}</small></span>
             </button>
           ))}
         </div>
 
         <div className="story-preview-wrap">
-          <canvas ref={canvasRef} className="story-preview-canvas" role="img" aria-label={`Pratinjau story ${template}`} />
-          <span className="story-preview-caption">{vip ? "Ekspor VIP · branding halus gugur.rip" : "Ekspor gratis · badge GUGUR.RIP"}</span>
+          <div className="story-preview-frame">
+            <canvas ref={canvasRef} className="story-preview-canvas" role="img" aria-label={`Pratinjau story ${template}`} />
+          </div>
+          <span className="story-preview-caption">{vip ? "Ekspor VIP 1080×1920 · branding halus graveyard.rip" : "Ekspor gratis 1080×1920 · GRAVEYARD"}</span>
         </div>
       </div>
     </Dialog>

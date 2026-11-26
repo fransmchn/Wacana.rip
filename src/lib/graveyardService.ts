@@ -300,7 +300,7 @@ export async function persistVipUpgrade(id: string, tema: NisanTema): Promise<vo
   try {
     const result = await client.from("makam").update({ tema, is_vip: true }).eq("id", id);
     if (result.error && !isMissingColumnError(result.error)) {
-      console.warn("[gugur.rip] Gagal menyinkronkan VIP ke Supabase:", result.error.message);
+      console.warn("[graveyard] Gagal menyinkronkan VIP ke Supabase:", result.error.message);
     }
   } catch {
     /* Tetap aman memakai localStorage override */

@@ -23,7 +23,7 @@ export function StatsBanner({ statistik }: StatsBannerProps) {
 
   return (
     <div ref={ref} className="altar-plaques" role="group" aria-label="Statistik pemakaman">
-      <h2 className="sr-only">Statistik TPU Gugur</h2>
+      <h2 className="sr-only">Statistik GRAVEYARD</h2>
       {items.map(({ label, value, full, icon: Icon, compact, suffix }) => (
         <div key={label} className="plaque">
           <span className="plaque-icon"><Icon size={14} aria-hidden="true" /></span>

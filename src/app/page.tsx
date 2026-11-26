@@ -137,7 +137,7 @@ export default function Home() {
       <section className="container-shell hero-section pb-12 pt-28 sm:pb-20 sm:pt-32">
         <div className="hero-wrap hero-layout px-5 py-8 sm:px-10 sm:py-12">
           <div className="hero-copy max-w-3xl">
-            <p className="eyebrow">T P U · G U G U R</p>
+            <p className="eyebrow">G R A V E Y A R D · R I P</p>
             <h1 className="mt-4 max-w-2xl text-display font-semibold tracking-[-.02em] text-[var(--text)]">Di sini, kegagalan punya tempat untuk pulang.</h1>
             <p className="mt-5 max-w-xl text-body text-[var(--text-muted)]">Monumen Digital bagi Mimpi, Skripsi, dan Rencana yang Gugur di Medan Juang.</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
