@@ -23,9 +23,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useClientNow } from "@/hooks/useClientNow";
 import { useProfile } from "@/hooks/useProfile";
 import { createMakam, hapusMakam, listMakamSaya, updateMakam } from "@/lib/graveyardService";
-import { createDraftGrave, replaceVipId } from "@/lib/payment";
 import { resolveTheme } from "@/lib/themeService";
-import { getTemaNisan } from "@/lib/themes";
+import { DEFAULT_TEMA, getTemaNisan } from "@/lib/themes";
 import { formatCompactRupiah, formatKerugian, formatRupiahLengkap, formatTanggal, getErosionInfo, getTierDuka } from "@/lib/utils";
 import type { CreateMakamInput, EditMakamInput, Kategori, Makam } from "@/types/graveyard";
 
@@ -47,9 +46,9 @@ const categoryLabel: Record<Kategori, string> = {
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, configured, loading: authLoading, signOut } = useAuth();
+  const { user, configured, loading: authLoading, authError, clearAuthError, signOut } = useAuth();
   const { profile: profileRecord, display: profile, mutate: mutateProfile } = useProfile(user);
-  const { vipIds, isVip, requestUpgrade } = useVipUpgrade();
+  const { isVip, requestUpgrade } = useVipUpgrade();
   const now = useClientNow();
 
   const [graves, setGraves] = useState<Makam[]>([]);
@@ -66,6 +65,12 @@ export default function ProfilePage() {
 
   const needLogin = configured && !user;
   const ownerId = configured ? user?.id : undefined;
+
+  useEffect(() => {
+    if (!authError) return;
+    toast(authError, "danger");
+    clearAuthError();
+  }, [authError, clearAuthError, toast]);
 
   const load = useCallback(async () => {
     if (configured && !user) { setGraves([]); setLoadingGraves(false); return; }
@@ -97,13 +102,12 @@ export default function ProfilePage() {
     return true;
   }), [graves, filter, isVip, now]);
 
-  const vipUnlocked = vipIds.length > 0 || graves.some((grave) => isVip(grave));
   const requireLogin = (action: () => void) => { if (needLogin) { setLoginOpen(true); return; } action(); };
   const openBury = () => requireLogin(() => { setBurySession((session) => session + 1); setBuryOpen(true); });
   const erosion = (grave: Makam) => getErosionInfo(grave, now);
 
-  async function persistGrave(input: CreateMakamInput, options: { silent?: boolean; vip?: boolean } = {}): Promise<Makam> {
-    const created = await createMakam(options.vip ? { ...input, vip: true } : input);
+  async function persistGrave(input: CreateMakamInput, options: { silent?: boolean } = {}): Promise<Makam> {
+    const created = await createMakam({ ...input, vip: false });
     setGraves((current) => [created, ...current]);
     setBuryOpen(false);
     setFilter("semua");
@@ -115,23 +119,34 @@ export default function ProfilePage() {
     window.setTimeout(() => setStoryTarget(created), 700);
   }
 
-  const vipThemeRequest = (input: CreateMakamInput) => requireLogin(() => {
-    const draft = createDraftGrave(input);
-    requestUpgrade(draft, {
+  /**
+   * Anti-Bypass VIP Creation Flow:
+   * Simpan dulu sebagai Free tier (`batu-lapuk`, `vip: false`), lalu luncurkan CheckoutModal.
+   * Jika user batal, makam tetap di Free tier.
+   */
+  const vipThemeRequest = async (input: CreateMakamInput) => {
+    if (needLogin) { setLoginOpen(true); return; }
+    const created = await persistGrave({ ...input, tema: DEFAULT_TEMA }, { silent: true });
+    requestUpgrade(created, {
       selectedTheme: input.tema,
       userId: ownerId,
+      userEmail: user?.email,
+      userName: profile.name,
       onPaid: async (result) => {
         const chosenTheme = result.transaction.params.selectedTheme;
-        const created = await persistGrave({ ...input, tema: chosenTheme }, { silent: true, vip: true });
-        replaceVipId(result.graveId, created.id);
         await load();
-        afterCreate(created);
+        afterCreate({ ...created, tema: chosenTheme, vip: true });
+      },
+      onCancel: () => {
+        toast("Makam disimpan di Lembah Perjuangan (Batu Lapuk). Kamu bisa upgrade ke VIP kapan saja.", "info");
       },
     });
-  });
+  };
 
   const upgrade = (grave: Makam) => requireLogin(() => requestUpgrade(grave, {
     userId: ownerId,
+    userEmail: user?.email,
+    userName: profile.name,
     onPaid: async () => { await load(); },
   }));
 
@@ -141,13 +156,14 @@ export default function ProfilePage() {
     requestUpgrade(target, {
       selectedTheme: input.tema,
       userId: ownerId,
+      userEmail: user?.email,
+      userName: profile.name,
       onPaid: async (result) => {
         const chosenTheme = result.transaction.params.selectedTheme;
         const updated = await updateMakam(target.id, { ...input, tema: chosenTheme }, ownerId);
-        setGraves((current) => current.map((grave) => grave.id === updated.id ? updated : grave));
+        setGraves((current) => current.map((grave) => grave.id === updated.id ? { ...updated, vip: true, tema: chosenTheme } : grave));
         setEditTarget(null);
         await load();
-        toast("Tema VIP permanen dipasang.", "success");
       },
     });
   });
@@ -177,7 +193,7 @@ export default function ProfilePage() {
         <section className="profile-hero" aria-labelledby="profile-title">
           <div className="profile-identity">
             <p className="eyebrow">Arsip pribadi · GRAVEYARD</p>
-            <h1 id="profile-title" className="text-display">Petak milik {profile?.name ?? "penjaga GRAVEYARD"}.</h1>
+            <h1 id="profile-title" className="text-display">Petak milik {user ? profile.name : "penjaga GRAVEYARD"}.</h1>
             <p className="section-whisper">Semua mimpi yang pernah kamu kubur, berikut keadaan monumnya hari ini.</p>
           </div>
           <div className="profile-hero-actions">
@@ -252,10 +268,10 @@ export default function ProfilePage() {
       <Footer />
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       {profileOpen && user && <ProfileModal user={user} profile={profileRecord} onClose={() => setProfileOpen(false)} onSave={async (patch) => { await mutateProfile(patch); }} onLogout={() => void signOut()} />}
-      {buryOpen && <BuryModal key={burySession} onClose={() => setBuryOpen(false)} onSubmit={(input) => persistGrave(input)} onCreated={afterCreate} vipUnlocked={vipUnlocked} onVipTheme={vipThemeRequest} />}
-      {editTarget && <EditGraveModal makam={editTarget} onClose={() => setEditTarget(null)} onSave={saveEdit} vipUnlocked={vipUnlocked} onUpgradeTheme={upgradeTheme} />}
+      {buryOpen && <BuryModal key={burySession} onClose={() => setBuryOpen(false)} onSubmit={(input) => persistGrave(input)} onCreated={afterCreate} onVipTheme={vipThemeRequest} defaultAuthor={user ? profile.name : ""} />}
+      {editTarget && <EditGraveModal makam={editTarget} onClose={() => setEditTarget(null)} onSave={saveEdit} isGraveVip={isVip(editTarget)} onUpgradeTheme={upgradeTheme} />}
       {digTarget && <DigUpConfirmModal makam={digTarget} onClose={() => setDigTarget(null)} onConfirm={digUp} />}
-      {storyTarget && <StoryStudioModal makam={graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget} vip={isVip(storyTarget)} theme={resolveTheme(storyTarget)} onClose={() => setStoryTarget(null)} />}
+      {storyTarget && <StoryStudioModal makam={graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget} vip={isVip(graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget)} theme={resolveTheme(graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget)} onClose={() => setStoryTarget(null)} />}
     </main>
   );
 }

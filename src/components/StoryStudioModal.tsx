@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, Landmark, ReceiptText, Sparkles } from "lucide-react";
+import { Download, Flame, ReceiptText, Share2, Sparkles } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { STORY_TEMPLATES, downloadStoryPng, renderStoryCanvas, type StoryTemplate } from "@/lib/storyCanvas";
+import {
+  STORY_TEMPLATES,
+  downloadStoryPng,
+  renderStoryCanvas,
+  shareStoryImage,
+  type StoryTemplate,
+} from "@/lib/storyCanvas";
 import type { Makam, NisanTema } from "@/types/graveyard";
 
 interface StoryStudioModalProps {
@@ -19,7 +25,8 @@ export function StoryStudioModal({ makam, vip, theme, onClose }: StoryStudioModa
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [template, setTemplate] = useState<StoryTemplate>("struk");
-  const [busy, setBusy] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,29 +38,73 @@ export function StoryStudioModal({ makam, vip, theme, onClose }: StoryStudioModa
     return () => { cancelled = true; };
   }, [makam, template, vip, theme, toast]);
 
-  async function download() {
-    setBusy(true);
+  async function handleDownload() {
+    setDownloading(true);
     try {
       await downloadStoryPng(makam, { template, vip, theme });
-      toast("Story 9:16 siap dibagikan.", "success");
+      toast("Gambar diunduh! Siap di-upload ke Instagram Story.", "success");
     } catch (reason) {
       toast(reason instanceof Error ? reason.message : "Story gagal dibuat.", "danger");
-    } finally { setBusy(false); }
+    } finally {
+      setDownloading(false);
+    }
   }
 
+  async function handleShare() {
+    setSharing(true);
+    try {
+      const outcome = await shareStoryImage(makam, { template, vip, theme });
+      if (outcome === "shared") {
+        toast("Berhasil dibagikan ke aplikasi pilihanmu!", "success");
+      } else if (outcome === "fallback") {
+        toast("Gambar diunduh! Siap di-upload ke Instagram Story.", "success");
+      }
+      // outcome === "cancelled": user dismissed native share sheet cleanly
+    } catch (reason) {
+      toast(reason instanceof Error ? reason.message : "Gagal membagikan gambar story.", "danger");
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  const busy = downloading || sharing;
+
   return (
-    <Dialog open title="IG Story Studio" onClose={onClose} className="modal-dialog-wide story-studio-dialog" footer={<>
-      <Button type="button" variant="ghost" onClick={onClose}>Tutup</Button>
-      <Button type="button" loading={busy} onClick={() => void download()}><Download size={16} aria-hidden="true" />Unduh Story (1080×1920)</Button>
-    </>}>
+    <Dialog
+      open
+      title="IG Story Studio"
+      onClose={onClose}
+      className="modal-dialog-wide story-studio-dialog"
+      footer={
+        <div className="story-footer-actions">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>Tutup</Button>
+          <div className="story-footer-primary">
+            <Button type="button" variant="secondary" loading={downloading} disabled={sharing} onClick={() => void handleDownload()}>
+              <Download size={16} aria-hidden="true" />
+              Unduh PNG
+            </Button>
+            <Button type="button" loading={sharing} disabled={downloading} onClick={() => void handleShare()}>
+              <Share2 size={16} aria-hidden="true" />
+              Bagikan ke IG Story / Apps
+            </Button>
+          </div>
+        </div>
+      }
+    >
       <div className="story-studio">
-        <p className="modal-intro">Tiga templat viral 9:16 untuk dibagikan ke Instagram Story. Pilih gaya, tinjau hasilnya, lalu unduh PNG tajam 1080×1920.</p>
+        <p className="modal-intro">Tiga templat viral 9:16 siap pamer di Instagram Story. Pilih gaya, lalu bagikan langsung atau unduh PNG 1080×1920.</p>
 
         <div className="story-template-grid" role="group" aria-label="Pilih templat story">
           {STORY_TEMPLATES.map((item) => (
-            <button key={item.id} type="button" className={`story-template-button ${template === item.id ? "story-template-active" : ""}`} aria-pressed={template === item.id} onClick={() => setTemplate(item.id)}>
+            <button
+              key={item.id}
+              type="button"
+              className={`story-template-button ${template === item.id ? "story-template-active" : ""}`}
+              aria-pressed={template === item.id}
+              onClick={() => setTemplate(item.id)}
+            >
               <span className="story-template-icon" aria-hidden="true">
-                {item.id === "struk" ? <ReceiptText size={15} /> : item.id === "editorial" ? <Sparkles size={15} /> : <Landmark size={15} />}
+                {item.id === "struk" ? <ReceiptText size={15} /> : item.id === "wrapped" ? <Flame size={15} /> : <Sparkles size={15} />}
               </span>
               <span><strong>{item.label}</strong><small>{item.hint}</small></span>
             </button>

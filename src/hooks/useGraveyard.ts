@@ -11,7 +11,10 @@ import {
   tambahKomentar,
   type BungaHariIni,
 } from "@/lib/graveyardService";
-import type { CreateMakamInput, KomentarInput, Makam, Statistik } from "@/types/graveyard";
+import { syncVipStatusLocally } from "@/lib/payment";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { isNisanTema } from "@/lib/themes";
+import type { CreateMakamInput, KomentarInput, Makam, NisanTema, Statistik } from "@/types/graveyard";
 
 interface UseGraveyard {
   makam: Makam[];
@@ -24,6 +27,16 @@ interface UseGraveyard {
   kuburkan: (input: CreateMakamInput) => Promise<Makam>;
   bunga: (id: string) => Promise<void>;
   komentar: (id: string, input: KomentarInput) => Promise<void>;
+}
+
+interface RealtimeMakamPayload {
+  id?: string;
+  is_vip?: boolean | null;
+  tema?: string | null;
+  bunga_count?: number | null;
+  judul?: string | null;
+  penyebab?: string | null;
+  epitaph?: string | null;
 }
 
 const emptyStats: Statistik = { totalMakam: 0, totalBunga: 0, totalRupiah: 0, totalJam: 0 };
@@ -50,15 +63,68 @@ export function useGraveyard(): UseGraveyard {
   }, []);
 
   const refreshPersonalStatus = useCallback(async (userId: string | undefined, ids: string[]) => {
-    if (!userId) { setBungaStatus({}); return; }
+    if (!userId || !ids.length) { setBungaStatus({}); return; }
     try {
       setBungaStatus(await getStatusBungaHariIni(ids));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Status peziarah gagal dimuat.");
+    } catch {
+      // Status personal (tamu/sesi kedaluwarsa) tidak boleh mengganggu daftar makam publik.
+      setBungaStatus({});
     }
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  // Supabase Realtime: sinkronkan upgrade VIP dari webhook (misal QRIS via HP lain) tanpa refresh halaman.
+  useEffect(() => {
+    const client = createSupabaseBrowserClient();
+    if (!client) return;
+
+    const channel = client
+      .channel("graveyard-makam-updates")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "makam" },
+        (payload) => {
+          const nextRow = payload.new as RealtimeMakamPayload | null;
+          const id = nextRow?.id;
+          if (!id) return;
+
+          const promotedVip = Boolean(nextRow.is_vip);
+          const nextTema: NisanTema | undefined = isNisanTema(nextRow.tema) ? nextRow.tema : undefined;
+
+          if (promotedVip) {
+            syncVipStatusLocally(id, nextTema ?? "obsidian-emas");
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(
+                new CustomEvent("graveyard:vip-synced", {
+                  detail: { graveId: id, tema: nextTema ?? "obsidian-emas" },
+                }),
+              );
+            }
+          }
+
+          setMakam((current) =>
+            current.map((item) => {
+              if (item.id !== id) return item;
+              return {
+                ...item,
+                ...(promotedVip ? { vip: true } : {}),
+                ...(nextTema ? { tema: nextTema } : {}),
+                ...(typeof nextRow.bunga_count === "number" ? { bunga: nextRow.bunga_count } : {}),
+                ...(typeof nextRow.judul === "string" && nextRow.judul.trim() ? { judul: nextRow.judul } : {}),
+                ...(typeof nextRow.penyebab === "string" && nextRow.penyebab.trim() ? { penyebab: nextRow.penyebab } : {}),
+                ...(typeof nextRow.epitaph === "string" && nextRow.epitaph.trim() ? { epitaph: nextRow.epitaph } : {}),
+              };
+            }),
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void client.removeChannel(channel);
+    };
+  }, []);
 
   const replaceMakam = useCallback((updated: Makam) => {
     setMakam((current) => current.some((item) => item.id === updated.id) ? current.map((item) => item.id === updated.id ? updated : item) : [updated, ...current]);

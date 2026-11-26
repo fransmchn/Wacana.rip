@@ -7,9 +7,22 @@ import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabas
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const configured = isSupabaseConfigured();
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const callbackError = params.get("auth_error");
+      if (callbackError) {
+        setAuthError(callbackError);
+        params.delete("auth_error");
+        const nextQuery = params.toString();
+        const cleanUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
+        window.history.replaceState({}, "", cleanUrl);
+      }
+    }
+
     const client = createSupabaseBrowserClient();
     if (!client) {
       setLoading(false);
@@ -19,13 +32,23 @@ export function useAuth() {
     let active = true;
     const reportError = (error: unknown) => {
       const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
-      // Supabase mengembalikan ini untuk pengunjung tanpa sesi; bukan kegagalan.
-      if (message && !/auth session missing/i.test(message)) console.error("[wacana-auth] user lookup failed", message || error);
+      if (message && !/auth session missing/i.test(message)) {
+        console.error("[graveyard-auth] user lookup failed:", message || error);
+      }
     };
+
+    // Hydrate from cookie/storage session immediately, then verify with getUser()
+    void client.auth.getSession().then(({ data }) => {
+      if (active && data.session?.user) {
+        setUser(data.session.user);
+        setLoading(false);
+      }
+    }).catch(() => undefined);
+
     void client.auth.getUser().then(({ data, error }) => {
       if (error) reportError(error);
       if (active) {
-        setUser(data.user);
+        setUser(data.user ?? null);
         setLoading(false);
       }
     }).catch((error: unknown) => {
@@ -35,9 +58,13 @@ export function useAuth() {
         setLoading(false);
       }
     });
+
     const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
-      if (active) setUser(session?.user ?? null);
+      if (!active) return;
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
+
     return () => {
       active = false;
       listener.subscription.unsubscribe();
@@ -60,7 +87,10 @@ export function useAuth() {
     const client = createSupabaseBrowserClient();
     if (!client) return;
     await client.auth.signOut();
+    setUser(null);
   }
 
-  return { user, loading, configured, updateProfile, signOut };
+  const clearAuthError = () => setAuthError(null);
+
+  return { user, loading, configured, authError, clearAuthError, updateProfile, signOut };
 }

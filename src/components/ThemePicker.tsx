@@ -10,9 +10,10 @@ interface ThemePickerProps {
   vipUnlocked: boolean;
   previewTitle: string;
   onUpgrade: () => void;
+  upgradeLabel?: string;
 }
 
-export function ThemePicker({ value, onChange, vipUnlocked, previewTitle, onUpgrade }: ThemePickerProps) {
+export function ThemePicker({ value, onChange, vipUnlocked, previewTitle, onUpgrade, upgradeLabel = "Kuburkan dengan Tema VIP — Rp 15.000" }: ThemePickerProps) {
   const selected = getTemaNisan(value);
   const lockedPreview = selected.vip && !vipUnlocked;
 
@@ -43,8 +44,8 @@ export function ThemePicker({ value, onChange, vipUnlocked, previewTitle, onUpgr
 
       {lockedPreview && (
         <div className="theme-unlock-banner" role="status">
-          <div><Lock size={15} aria-hidden="true" /><span><strong>{selected.label} terkunci.</strong> Lihat hasilnya di nisanmu, lalu abadikan dengan sekali bayar.</span></div>
-          <button type="button" onClick={onUpgrade}>Buka Semua Tema &amp; Abadikan (VIP - Rp 15.000)</button>
+          <div><Lock size={15} aria-hidden="true" /><span><strong>{selected.label} memerlukan VIP.</strong> Monumen disimpan dulu di Lembah Perjuangan, lalu langsung di-upgrade ke Bukit Kehormatan setelah pembayaran selesai.</span></div>
+          <button type="button" onClick={onUpgrade}>{upgradeLabel}</button>
         </div>
       )}
     </section>

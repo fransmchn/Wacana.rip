@@ -23,8 +23,18 @@ export function avatarToneFor(id: string): ProfileDisplay["avatarTone"] {
 
 export function getProfileDisplay(user: User | null, profile?: ProfileRecord | null): ProfileDisplay {
   const email = user?.email ?? "";
-  const name = profile?.display_name?.trim() || user?.user_metadata.full_name?.trim() || email || "Anonim";
-  const rawAvatar = profile?.avatar_url ?? user?.user_metadata.avatar_url ?? null;
+  const meta = user?.user_metadata as Record<string, unknown> | undefined;
+  const oauthName =
+    (typeof meta?.full_name === "string" ? meta.full_name.trim() : "") ||
+    (typeof meta?.name === "string" ? meta.name.trim() : "");
+  const oauthAvatar =
+    (typeof meta?.avatar_url === "string" ? meta.avatar_url.trim() : "") ||
+    (typeof meta?.picture === "string" ? meta.picture.trim() : "") ||
+    null;
+  const profileName = profile?.display_name?.trim() || "";
+  const resolvedProfileName = profileName && profileName !== "Anonim" ? profileName : "";
+  const name = resolvedProfileName || oauthName || profileName || email.split("@")[0] || "Anonim";
+  const rawAvatar = profile?.avatar_url ?? oauthAvatar;
   const avatar = resolveAvatar(rawAvatar, profile?.updated_at);
   return { name, email, initials: initialsFor(name), avatarUrl: avatar.type === "image" ? avatar.url ?? null : rawAvatar, username: profile?.username ?? null, bio: profile?.bio ?? "", updatedAt: profile?.updated_at ?? null, avatarTone: avatarToneFor(user?.id ?? email ?? name) };
 }

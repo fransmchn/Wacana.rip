@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Crown, QrCode, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Crown, QrCode, ShieldCheck } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import {
@@ -9,7 +9,6 @@ import {
   payWithMidtransSnap,
   VIP_PRICE,
   type CreateCheckoutParams,
-  type PaymentGatewayMode,
   type PaymentMethod,
 } from "@/lib/payment";
 import { getTemaNisan, isTemaVip, VIP_TEMAS } from "@/lib/themes";
@@ -20,7 +19,6 @@ export interface CheckoutConfirmPayload {
   selectedTheme: NisanTema;
   orderId: string;
   method: PaymentMethod;
-  mode: PaymentGatewayMode;
 }
 
 interface CheckoutModalProps {
@@ -40,7 +38,7 @@ export function CheckoutModal({ params, onClose, onConfirm }: CheckoutModalProps
   const initialTheme: NisanTema = isTemaVip(params.selectedTheme) ? params.selectedTheme : "obsidian-emas";
   const [selectedTheme, setSelectedTheme] = useState<NisanTema>(initialTheme);
   const [busy, setBusy] = useState(false);
-  const [demoOrderId, setDemoOrderId] = useState<string | null>(null);
+  const [gatewayOpen, setGatewayOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const tema = getTemaNisan(selectedTheme);
@@ -56,54 +54,39 @@ export function CheckoutModal({ params, onClose, onConfirm }: CheckoutModalProps
         amount: VIP_PRICE,
       });
 
-      if (session.mode === "demo") {
-        setDemoOrderId(session.orderId);
-        setStatusMessage("Midtrans server key belum diisi di .env. Gunakan Mode Demo di bawah untuk simulasi offline.");
+      const outcome = await payWithMidtransSnap(session.token, {
+        onBeforeOpen: () => setGatewayOpen(true),
+      });
+
+      if (outcome.status === "closed") {
+        setGatewayOpen(false);
+        setStatusMessage("Jendela pembayaran ditutup sebelum selesai. Makam tetap aman di Lembah Perjuangan — kamu bisa coba bayar lagi kapan saja.");
         return;
       }
 
-      if (!session.token) {
-        throw new Error("Token Midtrans Snap tidak ditemukan.");
-      }
-
-      const snapOutcome = await payWithMidtransSnap(session.token);
-      if (snapOutcome.status === "pending") {
-        setStatusMessage(`Menunggu penyelesaian pembayaran (${session.orderId}). Status VIP akan aktif otomatis setelah settlement.`);
+      if (outcome.status === "pending") {
+        setGatewayOpen(false);
+        setStatusMessage(`Menunggu penyelesaian pembayaran (${session.orderId}). Status VIP akan aktif otomatis setelah pembayaran terkonfirmasi.`);
         return;
       }
 
-      const paymentType = snapOutcome.result.payment_type ?? "";
+      const paymentType = outcome.result?.payment_type ?? "";
       const resolvedMethod: PaymentMethod = paymentType.includes("qris") ? "qris" : "ewallet";
       await onConfirm({
         selectedTheme,
-        orderId: snapOutcome.result.order_id || session.orderId,
+        orderId: outcome.result?.order_id || session.orderId,
         method: resolvedMethod,
-        mode: "midtrans",
       });
     } catch (reason) {
+      setGatewayOpen(false);
       setErrorMessage(reason instanceof Error ? reason.message : "Pembayaran belum berhasil diproses.");
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleDemoBypass() {
-    if (!demoOrderId) return;
-    setBusy(true);
-    setErrorMessage(null);
-    try {
-      await onConfirm({
-        selectedTheme,
-        orderId: demoOrderId,
-        method: "qris",
-        mode: "demo",
-      });
-    } catch (reason) {
-      setErrorMessage(reason instanceof Error ? reason.message : "Aktivasi mode demo gagal.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  // Lepas Dialog sementara saat jendela gerbang pembayaran aktif agar backdrop tidak menghalangi.
+  if (gatewayOpen) return null;
 
   return (
     <Dialog
@@ -115,22 +98,9 @@ export function CheckoutModal({ params, onClose, onConfirm }: CheckoutModalProps
         <div className="checkout-footer-actions">
           <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>Batal</Button>
           <div className="checkout-footer-primary">
-            {demoOrderId && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                loading={busy}
-                onClick={() => void handleDemoBypass()}
-                className="checkout-demo-bypass"
-              >
-                <Sparkles size={14} aria-hidden="true" />
-                Mode Demo (Bypass Bayar)
-              </Button>
-            )}
             <Button type="button" loading={busy} onClick={() => void handlePayNow()}>
               <ShieldCheck size={16} aria-hidden="true" />
-              Bayar Sekarang (QRIS / E-Wallet) — {formatRupiah(VIP_PRICE)}
+              {busy ? "Memproses gerbang pembayaran..." : `Bayar Sekarang (QRIS / E-Wallet) — ${formatRupiah(VIP_PRICE)}`}
             </Button>
           </div>
         </div>
@@ -175,13 +145,13 @@ export function CheckoutModal({ params, onClose, onConfirm }: CheckoutModalProps
         </ul>
 
         <div className="checkout-price">
-          <span>Total pembayaran · Midtrans Snap (QRIS, GoPay, ShopeePay, VA)</span>
+          <span>Total pembayaran · Pembayaran Instan</span>
           <strong>{formatRupiah(VIP_PRICE)}</strong>
         </div>
 
         <div className="checkout-gateway-badge">
           <QrCode size={16} aria-hidden="true" />
-          <span>Pembayaran aman via Midtrans Snap · QRIS, GoPay, ShopeePay, dan Virtual Account.</span>
+          <span>Pembayaran Instan (QRIS, E-Wallet &amp; Virtual Account) · Terenkripsi &amp; aktif otomatis.</span>
         </div>
 
         {statusMessage && (

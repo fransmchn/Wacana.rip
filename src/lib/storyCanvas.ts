@@ -2,12 +2,12 @@ import { getTemaNisan } from "@/lib/themes";
 import { formatCompactRupiah, formatTanggal, getDurasiHari, getLabelDurasi } from "@/lib/utils";
 import type { Makam, NisanTema } from "@/types/graveyard";
 
-export type StoryTemplate = "struk" | "editorial" | "shrine";
+export type StoryTemplate = "struk" | "wrapped" | "aura";
 
 export const STORY_TEMPLATES: Array<{ id: StoryTemplate; label: string; hint: string }> = [
-  { id: "struk", label: "Struk Kegagalan", hint: "Receiptify thermal" },
-  { id: "editorial", label: "Dark Editorial Poster", hint: "Wrapped / A24 vibe" },
-  { id: "shrine", label: "3D Monument Shrine", hint: "Tactile VIP card" },
+  { id: "struk", label: "Struk Kegagalan", hint: "Thermal receipt" },
+  { id: "wrapped", label: "Failure Wrapped", hint: "Minimalist editorial" },
+  { id: "aura", label: "Brutalist Aura", hint: "Duotone poster" },
 ];
 
 export interface StoryRenderOptions {
@@ -16,135 +16,109 @@ export interface StoryRenderOptions {
   theme: NisanTema;
 }
 
+export type ShareStoryOutcome = "shared" | "cancelled" | "fallback";
+
 interface Fonts {
   serif: string;
   mono: string;
   sans: string;
 }
 
-interface ThemeVisual {
-  bgTop: string;
-  bgMid: string;
-  bgBottom: string;
-  meshA: string;
-  meshB: string;
-  stoneTop: string;
-  stoneMid: string;
-  stoneBottom: string;
-  border: string;
-  borderInner: string;
+interface DuotonePalette {
+  base: string;
+  orbA: string;
+  orbB: string;
+  orbC: string;
   accent: string;
+  accentInk: string;
   ink: string;
   muted: string;
-  glow: string;
-  pillBg: string;
+  grid: string;
+  marqueeBg: string;
+  marqueeInk: string;
 }
 
 const W = 1080;
 const H = 1920;
 
-const THEME_VISUALS: Record<NisanTema, ThemeVisual> = {
+const DUOTONE_PALETTES: Record<NisanTema, DuotonePalette> = {
   "batu-lapuk": {
-    bgTop: "#141417",
-    bgMid: "#0d0d10",
-    bgBottom: "#070709",
-    meshA: "rgba(161, 161, 170, 0.24)",
-    meshB: "rgba(82, 82, 91, 0.28)",
-    stoneTop: "#44444c",
-    stoneMid: "#323238",
-    stoneBottom: "#242428",
-    border: "#71717a",
-    borderInner: "rgba(212, 212, 216, 0.25)",
-    accent: "#d4d4d8",
-    ink: "#f4f4f5",
-    muted: "#a1a1aa",
-    glow: "rgba(161, 161, 170, 0.24)",
-    pillBg: "rgba(255, 255, 255, 0.08)",
+    base: "#0B0B0D",
+    orbA: "rgba(245, 158, 11, 0.58)",
+    orbB: "rgba(161, 161, 170, 0.45)",
+    orbC: "rgba(217, 119, 6, 0.35)",
+    accent: "#F59E0B",
+    accentInk: "#0B0B0D",
+    ink: "#FAFAFA",
+    muted: "#D4D4D8",
+    grid: "rgba(255, 255, 255, 0.11)",
+    marqueeBg: "#F59E0B",
+    marqueeInk: "#09090B",
   },
   "beton-retak": {
-    bgTop: "#0f172a",
-    bgMid: "#0b1120",
-    bgBottom: "#060913",
-    meshA: "rgba(148, 163, 184, 0.25)",
-    meshB: "rgba(51, 65, 85, 0.34)",
-    stoneTop: "#3b4c63",
-    stoneMid: "#283548",
-    stoneBottom: "#1b2535",
-    border: "#64748b",
-    borderInner: "rgba(203, 213, 225, 0.26)",
-    accent: "#cbd5e1",
-    ink: "#f1f5f9",
-    muted: "#94a3b8",
-    glow: "rgba(148, 163, 184, 0.26)",
-    pillBg: "rgba(148, 163, 184, 0.14)",
+    base: "#090D16",
+    orbA: "rgba(59, 130, 246, 0.62)",
+    orbB: "rgba(148, 163, 184, 0.46)",
+    orbC: "rgba(30, 64, 175, 0.48)",
+    accent: "#93C5FD",
+    accentInk: "#090D16",
+    ink: "#F8FAFC",
+    muted: "#CBD5E1",
+    grid: "rgba(203, 213, 225, 0.13)",
+    marqueeBg: "#E2E8F0",
+    marqueeInk: "#0F172A",
   },
   "obsidian-emas": {
-    bgTop: "#13100a",
-    bgMid: "#09090b",
-    bgBottom: "#050507",
-    meshA: "rgba(245, 158, 11, 0.34)",
-    meshB: "rgba(180, 83, 9, 0.22)",
-    stoneTop: "#1a181e",
-    stoneMid: "#0c0c0f",
-    stoneBottom: "#070709",
-    border: "#f59e0b",
-    borderInner: "#fbbf24",
-    accent: "#fbbf24",
-    ink: "#fef3c7",
-    muted: "#e2be76",
-    glow: "rgba(245, 158, 11, 0.36)",
-    pillBg: "rgba(245, 158, 11, 0.14)",
+    base: "#080706",
+    orbA: "rgba(245, 158, 11, 0.72)",
+    orbB: "rgba(250, 204, 21, 0.52)",
+    orbC: "rgba(180, 83, 9, 0.56)",
+    accent: "#FBBF24",
+    accentInk: "#09090B",
+    ink: "#FFFBEB",
+    muted: "#FDE68A",
+    grid: "rgba(251, 191, 36, 0.15)",
+    marqueeBg: "#FBBF24",
+    marqueeInk: "#09090B",
   },
   "marmer-lumut": {
-    bgTop: "#04261d",
-    bgMid: "#021812",
-    bgBottom: "#010d0a",
-    meshA: "rgba(16, 185, 129, 0.34)",
-    meshB: "rgba(5, 150, 105, 0.24)",
-    stoneTop: "#0b5c46",
-    stoneMid: "#053d2e",
-    stoneBottom: "#02261d",
-    border: "#34d399",
-    borderInner: "rgba(167, 243, 208, 0.45)",
-    accent: "#6ee7b7",
-    ink: "#ecfdf5",
-    muted: "#a7f3d0",
-    glow: "rgba(16, 185, 129, 0.36)",
-    pillBg: "rgba(16, 185, 129, 0.15)",
+    base: "#02120D",
+    orbA: "rgba(16, 185, 129, 0.72)",
+    orbB: "rgba(110, 231, 183, 0.48)",
+    orbC: "rgba(6, 95, 70, 0.64)",
+    accent: "#6EE7B7",
+    accentInk: "#02120D",
+    ink: "#ECFDF5",
+    muted: "#A7F3D0",
+    grid: "rgba(110, 231, 183, 0.14)",
+    marqueeBg: "#34D399",
+    marqueeInk: "#022C22",
   },
   "y2k-chrome": {
-    bgTop: "#111827",
-    bgMid: "#0d0f18",
-    bgBottom: "#07080d",
-    meshA: "rgba(56, 189, 248, 0.34)",
-    meshB: "rgba(168, 85, 247, 0.32)",
-    stoneTop: "#d4d4d8",
-    stoneMid: "#52525b",
-    stoneBottom: "#18181b",
-    border: "#38bdf8",
-    borderInner: "#a855f7",
-    accent: "#38bdf8",
-    ink: "#ffffff",
-    muted: "#e0f2fe",
-    glow: "rgba(56, 189, 248, 0.38)",
-    pillBg: "rgba(56, 189, 248, 0.16)",
+    base: "#090914",
+    orbA: "rgba(168, 85, 247, 0.76)",
+    orbB: "rgba(56, 189, 248, 0.72)",
+    orbC: "rgba(236, 72, 153, 0.46)",
+    accent: "#38BDF8",
+    accentInk: "#090914",
+    ink: "#FFFFFF",
+    muted: "#E0F2FE",
+    grid: "rgba(56, 189, 248, 0.18)",
+    marqueeBg: "#38BDF8",
+    marqueeInk: "#090914",
   },
   "crimson-velvet": {
-    bgTop: "#2b090e",
-    bgMid: "#180508",
-    bgBottom: "#0c0204",
-    meshA: "rgba(225, 29, 72, 0.36)",
-    meshB: "rgba(127, 29, 29, 0.34)",
-    stoneTop: "#8b1d24",
-    stoneMid: "#5e1116",
-    stoneBottom: "#3a080c",
-    border: "#fda4af",
-    borderInner: "rgba(254, 205, 211, 0.45)",
-    accent: "#fda4af",
-    ink: "#fff1f2",
-    muted: "#fecdd3",
-    glow: "rgba(225, 29, 72, 0.38)",
-    pillBg: "rgba(253, 164, 175, 0.14)",
+    base: "#120306",
+    orbA: "rgba(225, 29, 72, 0.78)",
+    orbB: "rgba(251, 113, 133, 0.52)",
+    orbC: "rgba(127, 29, 29, 0.72)",
+    accent: "#FDA4AF",
+    accentInk: "#120306",
+    ink: "#FFF1F2",
+    muted: "#FECDD3",
+    grid: "rgba(253, 164, 175, 0.15)",
+    marqueeBg: "#FDA4AF",
+    marqueeInk: "#450A0A",
   },
 };
 
@@ -174,28 +148,91 @@ export async function renderStoryCanvas(
   drawStory(ctx, makam, options, fonts);
 }
 
-export async function downloadStoryPng(makam: Makam, options: StoryRenderOptions): Promise<void> {
+async function renderStoryBlob(makam: Makam, options: StoryRenderOptions): Promise<Blob> {
   const canvas = document.createElement("canvas");
   await renderStoryCanvas(canvas, makam, options, 1);
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Gagal mengonversi kanvas ke gambar PNG."));
+    }, "image/png");
+  });
+}
+
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.download = `graveyard-story-${options.template}-${makam.id.slice(-8)}.png`;
-  link.href = canvas.toDataURL("image/png");
+  link.download = filename;
+  link.href = url;
   document.body.appendChild(link);
   link.click();
   link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function downloadStoryPng(makam: Makam, options: StoryRenderOptions): Promise<void> {
+  const blob = await renderStoryBlob(makam, options);
+  triggerBlobDownload(blob, `graveyard-story-${options.template}-${makam.id.slice(-8)}.png`);
+}
+
+/** Bagikan PNG 1080×1920 via Web Share API Level 2 (IG Story / Apps), dengan fallback unduh + salin teks di desktop. */
+export async function shareStoryImage(makam: Makam, options: StoryRenderOptions): Promise<ShareStoryOutcome> {
+  const blob = await renderStoryBlob(makam, options);
+  const file = new File([blob], "graveyard-story.png", { type: "image/png" });
+  const shareText = `Baru saja mengubur mimpi "${makam.judul}" di GRAVEYARD 💀`;
+
+  if (
+    typeof navigator !== "undefined" &&
+    typeof navigator.canShare === "function" &&
+    typeof navigator.share === "function"
+  ) {
+    let supportsFiles = false;
+    try {
+      supportsFiles = navigator.canShare({ files: [file] });
+    } catch {
+      supportsFiles = false;
+    }
+
+    if (supportsFiles) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: "GRAVEYARD",
+          text: shareText,
+        });
+        return "shared";
+      } catch (reason) {
+        if (reason instanceof Error && reason.name === "AbortError") {
+          return "cancelled";
+        }
+        throw reason;
+      }
+    }
+  }
+
+  // Fallback desktop: unduh PNG + salin teks & tautan ke clipboard
+  triggerBlobDownload(blob, "graveyard-story.png");
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    const shareUrl = typeof window !== "undefined" ? window.location.origin : "https://graveyard.rip";
+    try {
+      await navigator.clipboard.writeText(`${shareText} — ${shareUrl}`);
+    } catch {
+      /* Clipboard mungkin diblokir browser; unduhan tetap berhasil. */
+    }
+  }
+  return "fallback";
 }
 
 function drawStory(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRenderOptions, fonts: Fonts): void {
   if (options.template === "struk") drawReceipt(ctx, makam, options, fonts);
-  else if (options.template === "editorial") drawEditorial(ctx, makam, options, fonts);
-  else drawShrine(ctx, makam, options, fonts);
+  else if (options.template === "wrapped") drawFailureWrapped(ctx, makam, options, fonts);
+  else drawBrutalistAura(ctx, makam, options, fonts);
 }
 
 /* ================================================================== */
-/* 1. Receiptify / Struk Kegagalan (Viral Thermal Receipt Design)      */
+/* 1. Receiptify / Struk Kegagalan (Kept Intact)                       */
 /* ================================================================== */
 function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRenderOptions, fonts: Fonts): void {
-  // Full-bleed dark grainy background (#0C0C0E)
   ctx.fillStyle = "#0C0C0E";
   ctx.fillRect(0, 0, W, H);
 
@@ -208,7 +245,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
 
   drawFilmGrain(ctx, 1800, 0.055);
 
-  // Floating, gently tilted thermal receipt paper
   const pw = 840;
   const ph = 1520;
   const px = -pw / 2;
@@ -220,7 +256,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   ctx.translate(W / 2, H / 2 - 16);
   ctx.rotate(-0.022);
 
-  // Realistic deep paper drop shadow
   ctx.save();
   ctx.shadowColor = "rgba(0, 0, 0, 0.78)";
   ctx.shadowBlur = 72;
@@ -231,12 +266,10 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   ctx.fill();
   ctx.restore();
 
-  // Clip inside serrated receipt for creases & paper texture
   ctx.save();
   traceSerratedPaper(ctx, px, py, pw, ph, tooth, toothH);
   ctx.clip();
 
-  // Subtle warm cream thermal gradient
   const paperGrad = ctx.createLinearGradient(px, py, px + pw, py + ph);
   paperGrad.addColorStop(0, "#F7F4EE");
   paperGrad.addColorStop(0.45, "#F2EFE7");
@@ -245,7 +278,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   ctx.fillStyle = paperGrad;
   ctx.fillRect(px, py, pw, ph);
 
-  // Realistic horizontal fold crease across middle
   const crease = ctx.createLinearGradient(0, -140, 0, -90);
   crease.addColorStop(0, "rgba(0, 0, 0, 0)");
   crease.addColorStop(0.48, "rgba(28, 25, 23, 0.06)");
@@ -254,7 +286,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   ctx.fillStyle = crease;
   ctx.fillRect(px, -140, pw, 50);
 
-  // Second subtle lower crease
   const crease2 = ctx.createLinearGradient(0, 290, 0, 330);
   crease2.addColorStop(0, "rgba(0, 0, 0, 0)");
   crease2.addColorStop(0.5, "rgba(28, 25, 23, 0.045)");
@@ -268,7 +299,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   const ink = "#1C1917";
   const inkSoft = "#57534E";
 
-  // Header
   ctx.textAlign = "center";
   setFont(ctx, fonts.mono, 32, "700");
   ctx.fillStyle = ink;
@@ -284,7 +314,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   dashed(ctx, left, right, py + 208, "rgba(28, 25, 23, 0.45)", 2.5);
   dashed(ctx, left, right, py + 216, "rgba(28, 25, 23, 0.22)", 1.5);
 
-  // Featured Fallen Dream Title
   setFont(ctx, fonts.serif, 48, "700");
   ctx.fillStyle = ink;
   const titleLines = wrap(ctx, makam.judul, innerW - 24, 2);
@@ -299,7 +328,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
 
   dashed(ctx, left, right, afterTitleY + 34, "rgba(28, 25, 23, 0.4)", 2);
 
-  // Itemized Breakdown Table with Dotted Leaders
   const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
   const timeWasted = makam.kerugianJam
     ? `${makam.kerugianJam} JAM (${getLabelDurasi(durasi)})`
@@ -318,14 +346,12 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
 
   let cursorY = afterTitleY + 92;
   items.forEach((row) => {
-    // Label on left
     ctx.textAlign = "left";
     setFont(ctx, fonts.mono, 21, "700");
     ctx.fillStyle = inkSoft;
     ctx.fillText(row.label, left, cursorY);
     const labelW = ctx.measureText(row.label).width;
 
-    // Value on right (fitted cleanly)
     ctx.textAlign = "right";
     setFont(ctx, fonts.mono, 24, "600");
     ctx.fillStyle = ink;
@@ -334,7 +360,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
     const valW = ctx.measureText(valText).width;
     ctx.fillText(valText, right, cursorY);
 
-    // Dotted leader between label & value
     const dotStart = left + labelW + 14;
     const dotEnd = right - valW - 14;
     if (dotEnd > dotStart + 10) {
@@ -345,7 +370,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
 
   dashed(ctx, left, right, cursorY - 12, "rgba(28, 25, 23, 0.45)", 2);
 
-  // Total Damage Row
   cursorY += 42;
   ctx.textAlign = "left";
   setFont(ctx, fonts.mono, 28, "700");
@@ -354,7 +378,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   ctx.textAlign = "right";
   ctx.fillText(financialLoss, right, cursorY);
 
-  // Epitaph Quote
   cursorY += 68;
   ctx.textAlign = "center";
   setFont(ctx, fonts.serif, 32, "italic 500");
@@ -364,7 +387,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
     ctx.fillText(line, 0, cursorY + idx * 44);
   });
 
-  // Tilted Ink Stamp: "NO REFUNDS • REST IN PEACE"
   const stampY = py + ph - 340;
   ctx.save();
   ctx.translate(0, stampY);
@@ -382,7 +404,6 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   ctx.fillText("NO REFUNDS • REST IN PEACE", 0, 9);
   ctx.restore();
 
-  // Multi-bar Barcode
   const barcodeY = py + ph - 246;
   drawBarcode(ctx, `${makam.id}-${makam.judul}`, -270, barcodeY, 540, 118, "#18181B");
 
@@ -394,411 +415,393 @@ function drawReceipt(ctx: CanvasRenderingContext2D, makam: Makam, options: Story
   ctx.fillStyle = "#78716C";
   ctx.fillText("GRAVEYARD.RIP — DIGITAL MEMORIAL", 0, py + ph - 48);
 
-  ctx.restore(); // end clip
-  ctx.restore(); // end paper transform
+  ctx.restore();
+  ctx.restore();
 
-  // Subtle bottom safe-zone branding on dark backdrop
   drawStoryFooter(ctx, options.vip, "rgba(244, 241, 234, 0.72)", fonts);
 }
 
 /* ================================================================== */
-/* 2. Dark Editorial Poster (Spotify Wrapped / A24 Vibe)               */
+/* 2. Failure Wrapped — Calm Minimalist Editorial / Dark-Wrapped      */
 /* ================================================================== */
-function drawEditorial(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRenderOptions, fonts: Fonts): void {
-  const v = THEME_VISUALS[options.theme];
-  const tema = getTemaNisan(options.theme);
+function drawFailureWrapped(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRenderOptions, fonts: Fonts): void {
   const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
+  const BG = "#111113";
+  const INK = "#F4F4F5";
+  const ZINC = "#A1A1AA";
+  const ZINC_DIM = "#71717A";
+  const GOLD = "#EAB308";
 
-  // Deep base vertical gradient
-  const baseGrad = ctx.createLinearGradient(0, 0, 0, H);
-  baseGrad.addColorStop(0, v.bgTop);
-  baseGrad.addColorStop(0.55, v.bgMid);
-  baseGrad.addColorStop(1, v.bgBottom);
-  ctx.fillStyle = baseGrad;
+  // 1. Deep matte obsidian/charcoal base (#111113)
+  ctx.fillStyle = BG;
   ctx.fillRect(0, 0, W, H);
 
-  // Rich radial mesh gradients matching the monument theme
-  const mesh1 = ctx.createRadialGradient(W * 0.16, H * 0.18, 40, W * 0.16, H * 0.18, 760);
-  mesh1.addColorStop(0, v.meshA);
-  mesh1.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = mesh1;
+  // 2. Soft, eye-friendly ambient spotlight gradients (warm slate + restrained champagne gold)
+  const slateGlow = ctx.createRadialGradient(W * 0.24, H * 0.16, 40, W * 0.24, H * 0.16, 860);
+  slateGlow.addColorStop(0, "rgba(148, 163, 184, 0.085)");
+  slateGlow.addColorStop(0.55, "rgba(100, 116, 139, 0.03)");
+  slateGlow.addColorStop(1, "rgba(17, 17, 19, 0)");
+  ctx.fillStyle = slateGlow;
   ctx.fillRect(0, 0, W, H);
 
-  const mesh2 = ctx.createRadialGradient(W * 0.86, H * 0.68, 40, W * 0.86, H * 0.68, 760);
-  mesh2.addColorStop(0, v.meshB);
-  mesh2.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = mesh2;
+  const goldGlow = ctx.createRadialGradient(W * 0.56, H * 0.44, 30, W * 0.56, H * 0.44, 720);
+  goldGlow.addColorStop(0, "rgba(234, 179, 8, 0.085)");
+  goldGlow.addColorStop(0.55, "rgba(234, 179, 8, 0.025)");
+  goldGlow.addColorStop(1, "rgba(17, 17, 19, 0)");
+  ctx.fillStyle = goldGlow;
   ctx.fillRect(0, 0, W, H);
 
-  const mesh3 = ctx.createRadialGradient(W * 0.5, H * 0.42, 30, W * 0.5, H * 0.42, 620);
-  mesh3.addColorStop(0, v.glow);
-  mesh3.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = mesh3;
-  ctx.fillRect(0, 0, W, H);
+  // Subtle tactile matte grain
+  drawFilmGrain(ctx, 1600, 0.028);
 
-  drawFilmGrain(ctx, 2200, 0.045);
-
-  // Subtle A24 editorial framing border (clears bottom footer cleanly)
-  ctx.strokeStyle = v.borderInner;
-  ctx.lineWidth = 2;
-  roundRect(ctx, 56, 124, W - 112, H - 300, 28);
+  // Quiet architectural Swiss hairline frame
+  ctx.strokeStyle = "rgba(244, 244, 245, 0.085)";
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, 64, 128, W - 128, H - 256, 20);
   ctx.stroke();
 
-  // Giant expressive Playfair "R.I.P." background watermark
-  ctx.save();
+  // 3. Subtle Top Archive Tag
   ctx.textAlign = "center";
-  setFont(ctx, fonts.serif, 330, "700");
-  ctx.fillStyle = v.accent;
-  ctx.globalAlpha = 0.075;
-  ctx.fillText("R.I.P.", W / 2, 540);
-  ctx.globalAlpha = 0.16;
-  ctx.strokeStyle = v.accent;
-  ctx.lineWidth = 2;
-  ctx.strokeText("R.I.P.", W / 2, 540);
-  ctx.restore();
+  setFont(ctx, fonts.mono, 21, "500");
+  ctx.fillStyle = ZINC;
+  ctx.fillText("ARCHIVE 2026  •  GRAVEYARD", W / 2, 224);
 
-  // Top editorial metadata bar (inside safe zone)
-  ctx.textAlign = "center";
-  setFont(ctx, fonts.mono, 22, "600");
-  ctx.fillStyle = v.accent;
-  ctx.fillText(`✦  GRAVEYARD ARCHIVE  •  ${tema.label.toUpperCase()}  ✦`, W / 2, 206);
+  // Refined warm-gold vertical accent tick
+  ctx.beginPath();
+  ctx.strokeStyle = "rgba(234, 179, 8, 0.55)";
+  ctx.lineWidth = 1.5;
+  ctx.moveTo(W / 2, 258);
+  ctx.lineTo(W / 2, 314);
+  ctx.stroke();
 
-  // Category & VIP pill
-  const topPillText = options.vip
-    ? `${makam.kategori.toUpperCase()}  •  MONUMEN ABADI VIP`
-    : `${makam.kategori.toUpperCase()}  •  ARSIP MIMPI GUGUR`;
-  drawGlassPill(ctx, W / 2, 276, topPillText, v.pillBg, v.border, v.ink, fonts.mono, 21);
+  // Category & Lifespan Eyebrow
+  setFont(ctx, fonts.mono, 21, "600");
+  ctx.fillStyle = GOLD;
+  const yearRange = `${makam.tanggalMulai.slice(0, 4)} — ${makam.tanggalMenyerah.slice(0, 4)}`;
+  const statusTag = options.vip ? "ABADI VIP" : makam.kategori.toUpperCase();
+  ctx.fillText(`${statusTag}  ·  ${yearRange}`, W / 2, 376);
 
-  // Giant Hero Title (Playfair Display)
-  ctx.textAlign = "center";
-  ctx.save();
-  ctx.shadowColor = v.glow;
-  ctx.shadowBlur = 32;
-  setFont(ctx, fonts.serif, 76, "700");
-  ctx.fillStyle = v.ink;
-  const heroLines = wrap(ctx, makam.judul, W - 190, 3);
-  const heroStartY = heroLines.length === 1 ? 520 : heroLines.length === 2 ? 485 : 450;
+  // 4. Expressive Serif Hero Title with Generous Breathing Room
+  setFont(ctx, fonts.serif, 76, "600");
+  ctx.fillStyle = INK;
+  const heroLines = wrap(ctx, makam.judul, W - 220, 3);
+  const titleLineH = 94;
+  const titleStartY = heroLines.length === 1 ? 548 : heroLines.length === 2 ? 506 : 472;
   heroLines.forEach((line, idx) => {
-    ctx.fillText(line, W / 2, heroStartY + idx * 94);
+    ctx.fillText(line, W / 2, titleStartY + idx * titleLineH);
   });
-  ctx.restore();
 
-  const afterHeroY = heroStartY + heroLines.length * 94 + 20;
-  setFont(ctx, fonts.mono, 24, "500");
-  ctx.fillStyle = v.muted;
-  ctx.fillText(
-    `${formatTanggal(makam.tanggalMulai).toUpperCase()}  —  ${formatTanggal(makam.tanggalMenyerah).toUpperCase()}`,
-    W / 2,
-    afterHeroY,
-  );
+  // 5. Refined Horizontal Hairline Divider with Gold Center Accent
+  const ruleTopY = 790;
+  divider(ctx, 132, W - 132, ruleTopY, "rgba(244, 244, 245, 0.13)", 1.5);
+  divider(ctx, W / 2 - 36, W / 2 + 36, ruleTopY, GOLD, 2.5);
 
-  // Glassmorphic Stat Badges (RUGI, UMUR, BUNGA)
-  const lossLabel = makam.kerugianRupiah ? formatCompactRupiah(makam.kerugianRupiah) : "Rp 0";
-  const statsY = afterHeroY + 104;
-  drawGlassPill(ctx, W / 2, statsY, `RUGI: ${lossLabel}`, v.pillBg, v.border, v.ink, fonts.mono, 27, 28, 20);
-  drawGlassPill(ctx, W / 2 - 205, statsY + 98, `UMUR: ${getLabelDurasi(durasi).toUpperCase()}`, v.pillBg, v.borderInner, v.ink, fonts.mono, 24, 24, 18);
-  drawGlassPill(ctx, W / 2 + 215, statsY + 98, `BUNGA: ${makam.bunga} ✿`, v.pillBg, v.borderInner, v.ink, fonts.mono, 24, 24, 18);
+  // 6. Clean 2-Column Stat Typography (KERUGIAN & WAKTU)
+  const lossText = makam.kerugianRupiah ? formatCompactRupiah(makam.kerugianRupiah) : "Rp 0";
+  const timeText = makam.kerugianJam ? `${makam.kerugianJam} jam` : getLabelDurasi(durasi);
 
-  // Dramatic Quote Block with Oversized Quotation Marks
-  const quoteBoxY = Math.max(statsY + 185, 1085);
-  const quoteBoxH = 420;
-  ctx.save();
-  ctx.fillStyle = "rgba(9, 9, 11, 0.42)";
-  roundRect(ctx, 106, quoteBoxY, W - 212, quoteBoxH, 24);
-  ctx.fill();
-  ctx.strokeStyle = v.borderInner;
-  ctx.lineWidth = 1.8;
+  const colLeftX = W * 0.295;
+  const colRightX = W * 0.705;
+  const statLabelY = 892;
+  const statValY = 980;
+  const statSubY = 1038;
+
+  // Vertical hairline separating columns
+  ctx.beginPath();
+  ctx.strokeStyle = "rgba(244, 244, 245, 0.11)";
+  ctx.lineWidth = 1.5;
+  ctx.moveTo(W / 2, 856);
+  ctx.lineTo(W / 2, 1062);
   ctx.stroke();
-  ctx.restore();
 
-  // Oversized opening quotation mark
-  ctx.textAlign = "left";
-  setFont(ctx, fonts.serif, 160, "700");
-  ctx.fillStyle = v.accent;
-  ctx.globalAlpha = 0.34;
-  ctx.fillText("“", 136, quoteBoxY + 132);
+  // Left Column: KERUGIAN
+  ctx.textAlign = "center";
+  setFont(ctx, fonts.mono, 19, "600");
+  ctx.fillStyle = ZINC;
+  ctx.fillText("KERUGIAN", colLeftX, statLabelY);
+
+  setFont(ctx, fonts.sans, 64, "600");
+  ctx.fillStyle = INK;
+  ctx.fillText(fit(ctx, lossText, 360), colLeftX, statValY);
+
+  setFont(ctx, fonts.mono, 18, "400");
+  ctx.fillStyle = ZINC_DIM;
+  ctx.fillText(`${makam.bunga} bunga ditabur`, colLeftX, statSubY);
+
+  // Right Column: WAKTU
+  setFont(ctx, fonts.mono, 19, "600");
+  ctx.fillStyle = ZINC;
+  ctx.fillText("WAKTU", colRightX, statLabelY);
+
+  setFont(ctx, fonts.sans, 64, "600");
+  ctx.fillStyle = INK;
+  ctx.fillText(fit(ctx, timeText, 360), colRightX, statValY);
+
+  setFont(ctx, fonts.mono, 18, "400");
+  ctx.fillStyle = ZINC_DIM;
+  ctx.fillText(`Hidup ${getLabelDurasi(durasi)}`, colRightX, statSubY);
+
+  // Second Hairline Divider
+  divider(ctx, 132, W - 132, 1126, "rgba(244, 244, 245, 0.11)", 1.5);
+
+  // 7. Short Italicized Epitaph Quote
+  setFont(ctx, fonts.serif, 86, "400");
+  ctx.fillStyle = GOLD;
+  ctx.globalAlpha = 0.72;
+  ctx.fillText("“", W / 2, 1244);
   ctx.globalAlpha = 1;
 
-  // Epitaph text
-  ctx.textAlign = "center";
-  setFont(ctx, fonts.serif, 44, "italic 500");
-  ctx.fillStyle = v.ink;
-  const epLines = wrap(ctx, makam.epitaph, W - 300, 3);
-  const epStartY = quoteBoxY + (epLines.length === 1 ? 190 : epLines.length === 2 ? 165 : 140);
+  setFont(ctx, fonts.serif, 46, "italic 500");
+  ctx.fillStyle = INK;
+  const epLines = wrap(ctx, makam.epitaph, W - 260, 3);
+  const epStartY = epLines.length === 1 ? 1330 : epLines.length === 2 ? 1308 : 1286;
   epLines.forEach((line, idx) => {
-    ctx.fillText(line, W / 2, epStartY + idx * 60);
+    ctx.fillText(line, W / 2, epStartY + idx * 64);
   });
 
-  // Cause of Death inside bottom of quote block
-  divider(ctx, 210, W - 210, quoteBoxY + quoteBoxH - 102, v.borderInner, 1.5);
-  setFont(ctx, fonts.mono, 18, "600");
-  ctx.fillStyle = v.accent;
-  ctx.fillText("PENYEBAB GUGUR", W / 2, quoteBoxY + quoteBoxH - 64);
-  setFont(ctx, fonts.sans, 28, "500");
-  ctx.fillStyle = v.muted;
-  ctx.fillText(fit(ctx, makam.penyebab, W - 290), W / 2, quoteBoxY + quoteBoxH - 26);
+  // Quiet Cause of Death Line
+  setFont(ctx, fonts.mono, 17, "500");
+  ctx.fillStyle = ZINC_DIM;
+  ctx.fillText("PENYEBAB GUGUR", W / 2, 1528);
 
-  // Clean Bottom Signature Bar
-  const sigY = 1664;
-  divider(ctx, 120, W - 120, sigY - 46, v.borderInner, 1.5);
-  ctx.textAlign = "center";
-  setFont(ctx, fonts.mono, 24, "600");
-  ctx.fillStyle = v.ink;
-  ctx.fillText(`BURIED BY ${fit(ctx, makam.pembuat.toUpperCase(), 480)}  •  GRAVEYARD`, W / 2, sigY);
+  setFont(ctx, fonts.sans, 26, "400");
+  ctx.fillStyle = ZINC;
+  ctx.fillText(fit(ctx, makam.penyebab, W - 260), W / 2, 1570);
 
-  drawStoryFooter(ctx, options.vip, v.muted, fonts);
+  // 8. Minimalist Bottom Signature Bar
+  divider(ctx, 132, W - 132, 1662, "rgba(244, 244, 245, 0.1)", 1.5);
+
+  setFont(ctx, fonts.mono, 21, "500");
+  ctx.fillStyle = ZINC;
+  const author = fit(ctx, makam.pembuat.toUpperCase(), 380);
+  ctx.fillText(`BURIED BY ${author}  •  GRAVEYARD.RIP`, W / 2, 1732);
 }
 
 /* ================================================================== */
-/* 3. 3D Monument Shrine Card (Tactile Tombstone Showcase)             */
+/* 3. Brutalist Aura / Top Flop Poster (Duotone Swiss Poster Style)    */
 /* ================================================================== */
-function drawShrine(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRenderOptions, fonts: Fonts): void {
-  const v = THEME_VISUALS[options.theme];
+function drawBrutalistAura(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRenderOptions, fonts: Fonts): void {
+  const p = DUOTONE_PALETTES[options.theme];
   const tema = getTemaNisan(options.theme);
   const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
 
-  // Atmospheric moonlit graveyard background
-  const sky = ctx.createLinearGradient(0, 0, 0, H);
-  sky.addColorStop(0, v.bgTop);
-  sky.addColorStop(0.55, v.bgMid);
-  sky.addColorStop(1, "#050507");
-  ctx.fillStyle = sky;
+  // 1. Vivid Duotone Radial Aurora Background synced to monument theme
+  ctx.fillStyle = p.base;
   ctx.fillRect(0, 0, W, H);
 
-  drawFilmGrain(ctx, 1800, 0.04);
-
-  // Glowing full moon & lunar halo behind monument apex
-  const moonY = 470;
-  const halo = ctx.createRadialGradient(W / 2, moonY, 60, W / 2, moonY, 540);
-  halo.addColorStop(0, v.glow);
-  halo.addColorStop(0.5, "rgba(255, 255, 255, 0.04)");
-  halo.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = halo;
-  ctx.fillRect(0, 0, W, 1150);
-
-  // Concentric lunar rings
   ctx.save();
-  ctx.strokeStyle = v.accent;
-  ctx.globalAlpha = 0.14;
+  ctx.globalCompositeOperation = "screen";
+
+  const orb1 = ctx.createRadialGradient(W * 0.2, H * 0.24, 40, W * 0.2, H * 0.24, 780);
+  orb1.addColorStop(0, p.orbA);
+  orb1.addColorStop(0.55, p.orbC);
+  orb1.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = orb1;
+  ctx.fillRect(0, 0, W, H);
+
+  const orb2 = ctx.createRadialGradient(W * 0.86, H * 0.54, 40, W * 0.86, H * 0.54, 820);
+  orb2.addColorStop(0, p.orbB);
+  orb2.addColorStop(0.55, p.orbA);
+  orb2.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = orb2;
+  ctx.fillRect(0, 0, W, H);
+
+  const orb3 = ctx.createRadialGradient(W * 0.34, H * 0.84, 30, W * 0.34, H * 0.84, 680);
+  orb3.addColorStop(0, p.orbC);
+  orb3.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = orb3;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  // Subtle dark vignette at edges for maximum foreground typography contrast
+  const vig = ctx.createRadialGradient(W / 2, H / 2, 340, W / 2, H / 2, 1180);
+  vig.addColorStop(0, "rgba(0, 0, 0, 0)");
+  vig.addColorStop(1, "rgba(0, 0, 0, 0.52)");
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. Bold Architectural Swiss Grid Lines + Registration Crosshairs
+  ctx.save();
+  ctx.strokeStyle = p.grid;
   ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(W / 2, moonY, 270, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.globalAlpha = 0.08;
-  ctx.beginPath();
-  ctx.arc(W / 2, moonY, 370, 0, Math.PI * 2);
-  ctx.stroke();
+  const cols = [72, 360, 720, W - 72];
+  const rows = [140, 570, 1080, 1580];
+  cols.forEach((x) => {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  });
+  rows.forEach((y) => {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  });
+  // Swiss '+' crosshairs at intersections
+  ctx.strokeStyle = p.accent;
+  ctx.globalAlpha = 0.55;
+  ctx.lineWidth = 2;
+  cols.forEach((x) => {
+    rows.forEach((y) => {
+      ctx.beginPath();
+      ctx.moveTo(x - 10, y);
+      ctx.lineTo(x + 10, y);
+      ctx.moveTo(x, y - 10);
+      ctx.lineTo(x, y + 10);
+      ctx.stroke();
+    });
+  });
   ctx.restore();
 
-  // Top Header
+  // 3. Giant Background Watermark Numerals ("2026")
+  ctx.save();
   ctx.textAlign = "center";
-  setFont(ctx, fonts.mono, 23, "600");
-  ctx.fillStyle = v.accent;
-  ctx.fillText("✦  GRAVEYARD MONUMENT SHRINE  ✦", W / 2, 188);
-  setFont(ctx, fonts.mono, 19, "500");
-  ctx.fillStyle = v.muted;
-  ctx.fillText(options.vip ? `BUKIT KEHORMATAN  •  ${tema.label.toUpperCase()}` : `LEMBAH PERJUANGAN  •  ${tema.label.toUpperCase()}`, W / 2, 226);
-
-  // Ground shadow & mist beneath pedestal
-  const mist = ctx.createRadialGradient(W / 2, 1500, 40, W / 2, 1500, 560);
-  mist.addColorStop(0, v.glow);
-  mist.addColorStop(0.6, "rgba(148, 163, 184, 0.07)");
-  mist.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = mist;
-  ctx.fillRect(0, 1200, W, 560);
-
-  // 3-Tier Stepped Stone Pedestal
-  const pedY = 1360;
-  drawPedestalTier(ctx, W / 2 - 330, pedY, 660, 34, v.stoneTop, v.stoneMid, v.borderInner);
-  drawPedestalTier(ctx, W / 2 - 390, pedY + 34, 780, 42, v.stoneMid, v.stoneBottom, v.border);
-  drawPedestalTier(ctx, W / 2 - 445, pedY + 76, 890, 46, v.stoneBottom, "#09090b", "rgba(255,255,255,0.08)");
-
-  // Centered 3D Sculpted Monument Stone
-  const sw = 680;
-  const sh = 1040;
-  const sx = (W - sw) / 2;
-  const sy = 330;
-
-  ctx.save();
-  // Moonlight ambient rim shadow
-  ctx.shadowColor = v.glow;
-  ctx.shadowBlur = options.vip ? 70 : 42;
-  ctx.shadowOffsetY = 18;
-  traceMonumentShape(ctx, sx, sy, sw, sh, options.theme);
-
-  const stoneGrad = ctx.createLinearGradient(sx, sy, sx + sw, sy + sh);
-  stoneGrad.addColorStop(0, v.stoneTop);
-  stoneGrad.addColorStop(0.46, v.stoneMid);
-  stoneGrad.addColorStop(1, v.stoneBottom);
-  ctx.fillStyle = stoneGrad;
-  ctx.fill();
+  setFont(ctx, fonts.sans, 410, "700");
+  ctx.fillStyle = "#FFFFFF";
+  ctx.globalAlpha = 0.065;
+  ctx.fillText("2026", W / 2, 540);
+  ctx.globalAlpha = 0.16;
+  ctx.strokeStyle = p.accent;
+  ctx.lineWidth = 2.5;
+  ctx.strokeText("2026", W / 2, 540);
   ctx.restore();
 
-  // Clip inside stone for surface textures & rim highlights
+  drawFilmGrain(ctx, 2200, 0.05);
+
+  // 4. Top Swiss Index Header
+  const margin = 76;
+  ctx.textAlign = "left";
+  setFont(ctx, fonts.mono, 22, "700");
+  ctx.fillStyle = p.ink;
+  ctx.fillText("01 // YOUR FAILURE AURA", margin, 198);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = p.accent;
+  ctx.fillText(`${tema.label.toUpperCase()}${options.vip ? " · VIP" : ""}`, W - margin, 198);
+
+  // 5. Asymmetric Top Subject Block (Left-aligned)
+  ctx.textAlign = "left";
+  setFont(ctx, fonts.mono, 20, "600");
+  ctx.fillStyle = p.accent;
+  ctx.fillText(`${makam.kategori.toUpperCase()}  •  ${makam.tanggalMulai.slice(0, 4)}—${makam.tanggalMenyerah.slice(0, 4)}`, margin, 290);
+
   ctx.save();
-  traceMonumentShape(ctx, sx, sy, sw, sh, options.theme);
-  ctx.clip();
-
-  // Moonlight top rim sheen
-  const rimGrad = ctx.createLinearGradient(sx, sy, sx, sy + 280);
-  rimGrad.addColorStop(0, "rgba(255, 255, 255, 0.18)");
-  rimGrad.addColorStop(1, "rgba(255, 255, 255, 0)");
-  ctx.fillStyle = rimGrad;
-  ctx.fillRect(sx, sy, sw, 280);
-
-  // Theme-specific tactile details
-  if (options.theme === "beton-retak") {
-    ctx.strokeStyle = "rgba(15, 23, 42, 0.72)";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(sx + 95, sy + 10);
-    ctx.lineTo(sx + 145, sy + 140);
-    ctx.lineTo(sx + 115, sy + 260);
-    ctx.lineTo(sx + 185, sy + 410);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(sx + sw - 85, sy + 60);
-    ctx.lineTo(sx + sw - 145, sy + 210);
-    ctx.lineTo(sx + sw - 120, sy + 330);
-    ctx.stroke();
-  } else if (options.theme === "marmer-lumut") {
-    ctx.strokeStyle = "rgba(167, 243, 208, 0.2)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(sx + 40, sy + 240);
-    ctx.bezierCurveTo(sx + 220, sy + 300, sx + 420, sy + 180, sx + sw - 20, sy + 420);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(226, 232, 240, 0.14)";
-    ctx.beginPath();
-    ctx.moveTo(sx + 90, sy + 720);
-    ctx.bezierCurveTo(sx + 280, sy + 620, sx + 460, sy + 780, sx + sw - 30, sy + 640);
-    ctx.stroke();
-  } else if (options.theme === "y2k-chrome") {
-    // Dark translucent engraving plate so text stays ultra-legible on bright chrome
-    ctx.fillStyle = "rgba(9, 9, 11, 0.54)";
-    roundRect(ctx, sx + 48, sy + 145, sw - 96, sh - 220, 18);
-    ctx.fill();
-  }
+  ctx.shadowColor = "rgba(0, 0, 0, 0.55)";
+  ctx.shadowBlur = 24;
+  setFont(ctx, fonts.sans, 72, "700");
+  ctx.fillStyle = p.ink;
+  const subLines = wrap(ctx, makam.judul.toUpperCase(), W - margin * 2, 3);
+  subLines.forEach((line, idx) => {
+    ctx.fillText(line, margin, 374 + idx * 80);
+  });
   ctx.restore();
 
-  // Crisp outer border & VIP double inner frame
-  traceMonumentShape(ctx, sx, sy, sw, sh, options.theme);
-  ctx.strokeStyle = v.border;
-  ctx.lineWidth = options.vip ? 5 : 3;
-  ctx.stroke();
+  // 6. Centerpiece Huge Stacked Quote / Epitaph + Oversized Opening Quote Glyph
+  const quoteAnchorY = 795;
 
-  if (options.vip) {
-    traceMonumentShape(ctx, sx + 18, sy + 18, sw - 36, sh - 36, options.theme);
-    ctx.strokeStyle = v.borderInner;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  // Apex Emblem (Crown / Star Medallion)
-  const emblemY = sy + 92;
+  // Oversized opening quote glyph
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(W / 2, emblemY, 44, 0, Math.PI * 2);
-  ctx.fillStyle = "#09090B";
-  ctx.fill();
-  ctx.strokeStyle = v.accent;
-  ctx.lineWidth = 3;
-  ctx.stroke();
-  setFont(ctx, fonts.serif, 40, "700");
-  ctx.fillStyle = v.accent;
-  ctx.textAlign = "center";
-  ctx.fillText(options.vip ? "♛" : "✦", W / 2, emblemY + 14);
+  ctx.textAlign = "left";
+  setFont(ctx, fonts.serif, 360, "700");
+  ctx.fillStyle = p.accent;
+  ctx.globalAlpha = 0.36;
+  ctx.fillText("“", 42, quoteAnchorY + 86);
   ctx.restore();
 
-  // Engraved Typography on Monument Face
-  ctx.textAlign = "center";
-  setFont(ctx, fonts.serif, 44, "700");
-  ctx.fillStyle = v.accent;
-  ctx.fillText("R . I . P", W / 2, sy + 206);
-
-  divider(ctx, W / 2 - 140, W / 2 + 140, sy + 234, v.accent, 2);
-
-  // Monument Title
+  // Huge stacked Playfair Display italic quote directly over duotone aura (no box!)
   ctx.save();
+  ctx.textAlign = "left";
   ctx.shadowColor = "rgba(0, 0, 0, 0.65)";
-  ctx.shadowBlur = 12;
-  setFont(ctx, fonts.serif, 54, "700");
-  ctx.fillStyle = v.ink;
-  const monLines = wrap(ctx, makam.judul, sw - 128, 3);
-  const monTitleY = sy + 324;
-  monLines.forEach((line, idx) => {
-    ctx.fillText(line, W / 2, monTitleY + idx * 68);
+  ctx.shadowBlur = 28;
+  setFont(ctx, fonts.serif, 74, "italic 700");
+  ctx.fillStyle = p.ink;
+  const epLines = wrap(ctx, makam.epitaph, W - 188, 4);
+  const epStartY = epLines.length <= 2 ? quoteAnchorY + 95 : quoteAnchorY + 38;
+  epLines.forEach((line, idx) => {
+    ctx.fillText(line, 108, epStartY + idx * 88);
   });
   ctx.restore();
 
-  const yearsY = monTitleY + monLines.length * 68 + 16;
-  setFont(ctx, fonts.mono, 24, "600");
-  ctx.fillStyle = v.muted;
-  ctx.fillText(
-    `${makam.tanggalMulai.slice(0, 4)} — ${makam.tanggalMenyerah.slice(0, 4)}  •  HIDUP ${getLabelDurasi(durasi).toUpperCase()}`,
-    W / 2,
-    yearsY,
-  );
+  // Asymmetric Cause & Stats Strip below quote (directly on Swiss grid)
+  const metaY = 1235;
+  divider(ctx, margin, W - margin, metaY - 46, p.accent, 2.5);
 
-  // Epitaph
-  const epY = yearsY + 84;
-  setFont(ctx, fonts.serif, 36, "italic 500");
-  ctx.fillStyle = v.ink;
-  const shrineEpLines = wrap(ctx, `“${makam.epitaph}”`, sw - 140, 2);
-  shrineEpLines.forEach((line, idx) => {
-    ctx.fillText(line, W / 2, epY + idx * 50);
+  ctx.textAlign = "left";
+  setFont(ctx, fonts.mono, 20, "700");
+  ctx.fillStyle = p.accent;
+  ctx.fillText("PENYEBAB GUGUR", margin, metaY);
+
+  setFont(ctx, fonts.sans, 34, "600");
+  ctx.fillStyle = p.ink;
+  const causeLines = wrap(ctx, makam.penyebab, 560, 2);
+  causeLines.forEach((line, idx) => {
+    ctx.fillText(line, margin, metaY + 46 + idx * 42);
   });
-
-  // Cause & Loss engraved strip at bottom of stone
-  const metaBoxY = sy + sh - 220;
-  divider(ctx, sx + 74, sx + sw - 74, metaBoxY - 24, v.borderInner, 1.5);
-  setFont(ctx, fonts.mono, 18, "600");
-  ctx.fillStyle = v.accent;
-  ctx.fillText("PENYEBAB GUGUR", W / 2, metaBoxY + 10);
-  setFont(ctx, fonts.sans, 26, "500");
-  ctx.fillStyle = v.ink;
-  ctx.fillText(fit(ctx, makam.penyebab, sw - 140), W / 2, metaBoxY + 48);
 
   const lossText = makam.kerugianRupiah ? formatCompactRupiah(makam.kerugianRupiah) : "Rp 0";
-  setFont(ctx, fonts.mono, 21, "600");
-  ctx.fillStyle = v.muted;
-  ctx.fillText(`RUGI ${lossText}  •  ${makam.bunga} BUNGA DITABUR`, W / 2, metaBoxY + 102);
+  setFont(ctx, fonts.mono, 23, "700");
+  ctx.fillStyle = p.muted;
+  ctx.fillText(
+    `RUGI ${lossText}  //  ${getLabelDurasi(durasi).toUpperCase()}  //  ${makam.bunga} ✿`,
+    margin,
+    1445,
+  );
 
-  // Floating Golden Petals & Fireflies
-  drawFloatingPetals(ctx, options.theme);
+  // User signature line
+  setFont(ctx, fonts.mono, 19, "600");
+  ctx.fillStyle = p.accent;
+  ctx.fillText("BURIED BY", margin, 1520);
+  setFont(ctx, fonts.sans, 34, "700");
+  ctx.fillStyle = p.ink;
+  ctx.fillText(fit(ctx, makam.pembuat.toUpperCase(), 520), margin, 1562);
 
-  // Tilted Certified / VIP Seal Stamp overlapping bottom-right of monolith
+  // 7. Giant "R.I.P." Stamp Badge rotated +8deg
   ctx.save();
-  ctx.translate(sx + sw - 92, sy + sh - 74);
-  ctx.rotate(-0.18);
-  const stampColor = options.vip ? "#FBBF24" : "#F87171";
-  const stampBg = options.vip ? "rgba(24, 18, 6, 0.92)" : "rgba(38, 10, 12, 0.92)";
-  const stampLabel = options.vip ? "★ ABADI VIP ★" : "CERTIFIED GUGUR";
-  ctx.fillStyle = stampBg;
-  roundRect(ctx, -182, -42, 364, 84, 12);
+  ctx.translate(822, 1396);
+  ctx.rotate(0.14); // +8deg
+
+  ctx.fillStyle = "rgba(9, 9, 11, 0.88)";
+  roundRect(ctx, -188, -110, 376, 220, 16);
   ctx.fill();
-  ctx.strokeStyle = stampColor;
-  ctx.lineWidth = 4.5;
+
+  ctx.strokeStyle = p.accent;
+  ctx.lineWidth = 7;
   ctx.stroke();
-  ctx.strokeStyle = stampColor;
+
+  ctx.strokeStyle = p.accent;
   ctx.globalAlpha = 0.45;
-  ctx.lineWidth = 1.5;
-  roundRect(ctx, -172, -32, 344, 64, 8);
+  ctx.lineWidth = 2;
+  roundRect(ctx, -172, -94, 344, 188, 10);
   ctx.stroke();
   ctx.globalAlpha = 1;
+
   ctx.textAlign = "center";
-  setFont(ctx, fonts.mono, 26, "700");
-  ctx.fillStyle = stampColor;
-  ctx.fillText(stampLabel, 0, 10);
+  setFont(ctx, fonts.serif, 102, "700");
+  ctx.fillStyle = p.accent;
+  ctx.fillText("R.I.P.", 0, 24);
+
+  setFont(ctx, fonts.mono, 22, "700");
+  ctx.fillStyle = p.ink;
+  ctx.fillText(options.vip ? "★ ABADI VIP ★" : "CERTIFIED GUGUR", 0, 68);
   ctx.restore();
 
-  // Bottom Shrine Signature
-  ctx.textAlign = "center";
-  setFont(ctx, fonts.mono, 24, "600");
-  ctx.fillStyle = v.ink;
-  ctx.fillText(`DIKUBUR OLEH ${fit(ctx, makam.pembuat.toUpperCase(), 520)}`, W / 2, 1624);
+  // 8. Bottom Full-Bleed Brutalist Marquee Strip
+  const marqueeY = 1662;
+  const marqueeH = 74;
+  ctx.save();
+  ctx.fillStyle = p.marqueeBg;
+  ctx.fillRect(0, marqueeY, W, marqueeH);
 
-  drawStoryFooter(ctx, options.vip, v.muted, fonts);
+  ctx.textAlign = "left";
+  setFont(ctx, fonts.mono, 28, "700");
+  ctx.fillStyle = p.marqueeInk;
+  const ticker = "GRAVEYARD • CERTIFIED GUGUR • NO REGRETS • GRAVEYARD • CERTIFIED GUGUR • NO REGRETS •";
+  ctx.fillText(ticker, -24, marqueeY + 47);
+  ctx.restore();
+
+  // Clean bottom safe-zone signature
+  drawStoryFooter(ctx, options.vip, p.muted, fonts);
 }
 
 /* ================================================================== */
@@ -810,12 +813,12 @@ function drawStoryFooter(ctx: CanvasRenderingContext2D, vip: boolean, color: str
   ctx.fillStyle = color;
   if (vip) {
     setFont(ctx, fonts.mono, 22, "600");
-    ctx.globalAlpha = 0.72;
-    ctx.fillText("GRAVEYARD  •  graveyard.rip", W / 2, 1796);
+    ctx.globalAlpha = 0.78;
+    ctx.fillText("GRAVEYARD  •  graveyard.rip", W / 2, 1812);
   } else {
     setFont(ctx, fonts.mono, 24, "700");
-    ctx.globalAlpha = 0.9;
-    ctx.fillText("DIBUAT DI GRAVEYARD  •  graveyard.rip", W / 2, 1796);
+    ctx.globalAlpha = 0.92;
+    ctx.fillText("DIBUAT DI GRAVEYARD  •  graveyard.rip", W / 2, 1812);
   }
   ctx.restore();
 }
@@ -823,8 +826,8 @@ function drawStoryFooter(ctx: CanvasRenderingContext2D, vip: boolean, color: str
 function drawFilmGrain(ctx: CanvasRenderingContext2D, count: number, alpha: number): void {
   ctx.save();
   for (let i = 0; i < count; i += 1) {
-    const x = ((i * 7919) % W);
-    const y = ((i * 104729) % H);
+    const x = (i * 7919) % W;
+    const y = (i * 104729) % H;
     const bright = i % 2 === 0;
     ctx.fillStyle = bright ? `rgba(255,255,255,${alpha})` : `rgba(0,0,0,${alpha * 1.4})`;
     ctx.fillRect(x, y, 2, 2);
@@ -845,143 +848,16 @@ function traceSerratedPaper(
   const actualW = w / count;
   ctx.beginPath();
   ctx.moveTo(x, y + toothH);
-  // Top serrated edge
   for (let i = 0; i < count; i += 1) {
     ctx.lineTo(x + i * actualW + actualW / 2, y);
     ctx.lineTo(x + (i + 1) * actualW, y + toothH);
   }
-  // Right edge
   ctx.lineTo(x + w, y + h - toothH);
-  // Bottom serrated edge
   for (let i = count - 1; i >= 0; i -= 1) {
     ctx.lineTo(x + i * actualW + actualW / 2, y + h);
     ctx.lineTo(x + i * actualW, y + h - toothH);
   }
   ctx.closePath();
-}
-
-function traceMonumentShape(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  theme: NisanTema,
-): void {
-  ctx.beginPath();
-  if (theme === "beton-retak") {
-    roundRect(ctx, x, y, w, h, 8);
-    return;
-  }
-  if (theme === "y2k-chrome") {
-    const cut = 54;
-    ctx.moveTo(x + cut, y);
-    ctx.lineTo(x + w - cut, y);
-    ctx.lineTo(x + w, y + cut);
-    ctx.lineTo(x + w, y + h - 10);
-    ctx.lineTo(x + w - 10, y + h);
-    ctx.lineTo(x + 10, y + h);
-    ctx.lineTo(x, y + h - 10);
-    ctx.lineTo(x, y + cut);
-    ctx.closePath();
-    return;
-  }
-  if (theme === "batu-lapuk") {
-    roundRect(ctx, x, y, w, h, 26);
-    return;
-  }
-  // Arched Gothic / Classical Monument for Obsidian, Marmer Lumut, Crimson Velvet
-  const archR = w * 0.46;
-  ctx.moveTo(x, y + h);
-  ctx.lineTo(x, y + archR * 0.62);
-  ctx.quadraticCurveTo(x, y, x + w / 2, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + archR * 0.62);
-  ctx.lineTo(x + w, y + h);
-  ctx.closePath();
-}
-
-function drawPedestalTier(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  topColor: string,
-  bottomColor: string,
-  strokeColor: string,
-): void {
-  const grad = ctx.createLinearGradient(x, y, x, y + h);
-  grad.addColorStop(0, topColor);
-  grad.addColorStop(1, bottomColor);
-  ctx.fillStyle = grad;
-  roundRect(ctx, x, y, w, h, 6);
-  ctx.fill();
-  ctx.strokeStyle = strokeColor;
-  ctx.lineWidth = 1.8;
-  ctx.stroke();
-}
-
-function drawFloatingPetals(ctx: CanvasRenderingContext2D, theme: NisanTema): void {
-  const petalColor =
-    theme === "marmer-lumut" ? "#6ee7b7" :
-    theme === "y2k-chrome" ? "#38bdf8" :
-    theme === "crimson-velvet" ? "#fda4af" : "#fbbf24";
-  const petals = [
-    { x: 148, y: 390, r: 0.4, s: 1.2 },
-    { x: 920, y: 440, r: -0.6, s: 1.0 },
-    { x: 118, y: 820, r: 0.9, s: 0.9 },
-    { x: 952, y: 780, r: -0.3, s: 1.3 },
-    { x: 175, y: 1210, r: 0.5, s: 1.1 },
-    { x: 910, y: 1140, r: -0.8, s: 0.95 },
-    { x: 260, y: 290, r: 0.2, s: 0.85 },
-    { x: 820, y: 310, r: -0.5, s: 0.9 },
-  ];
-  ctx.save();
-  petals.forEach((p) => {
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.r);
-    ctx.scale(p.s, p.s);
-    ctx.fillStyle = petalColor;
-    ctx.globalAlpha = 0.72;
-    ctx.shadowColor = petalColor;
-    ctx.shadowBlur = 16;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 8, 15, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  });
-  ctx.restore();
-}
-
-function drawGlassPill(
-  ctx: CanvasRenderingContext2D,
-  centerX: number,
-  centerY: number,
-  text: string,
-  fill: string,
-  stroke: string,
-  textColor: string,
-  fontFamily: string,
-  fontSize: number,
-  padX = 28,
-  padY = 16,
-): void {
-  setFont(ctx, fontFamily, fontSize, "600");
-  const textW = ctx.measureText(text).width;
-  const pillW = textW + padX * 2;
-  const pillH = fontSize + padY * 2;
-  ctx.save();
-  ctx.fillStyle = fill;
-  roundRect(ctx, centerX - pillW / 2, centerY - pillH / 2, pillW, pillH, pillH / 2);
-  ctx.fill();
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.textAlign = "center";
-  ctx.fillStyle = textColor;
-  ctx.fillText(text, centerX, centerY + fontSize * 0.35);
-  ctx.restore();
 }
 
 function drawBarcode(
@@ -1002,7 +878,6 @@ function drawBarcode(
   }
   ctx.fillStyle = color;
   for (let i = 0; i < bars; i += 1) {
-    // Guard bars at start, middle, and end for realistic thermal barcode look
     const isGuard = i === 0 || i === 2 || i === bars - 1 || i === bars - 3 || i === Math.floor(bars / 2);
     if (isGuard) {
       ctx.fillRect(x + i * unit, y, Math.max(unit * 0.9, 2), height + 10);

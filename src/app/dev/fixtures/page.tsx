@@ -62,7 +62,7 @@ export default function FixturesPage() {
       </section>
 
       {modal === "profile" && <ProfileModal user={user} profile={profile} onClose={() => setModal(null)} onSave={async () => undefined} onLogout={() => undefined} profileApi={{ getStats: async () => ({ wacanaDikubur: 4, bungaDitabur: 12 }), checkUsername: async () => true }} />}
-      {modal === "bury" && <BuryModal key="bury-fixture" onClose={() => setModal(null)} onSubmit={async (input: CreateMakamInput) => ({ ...makam, ...input, pembuat: input.pembuat ?? "Anonim", kronologi: input.kronologi ?? "", kerugianTeks: input.kerugianTeks ?? "", bunga: 0, komentar: [], createdAt: new Date().toISOString() })} onCreated={() => setModal(null)} vipUnlocked={false} onVipTheme={(input) => openCheckout(input.tema)} />}
+      {modal === "bury" && <BuryModal key="bury-fixture" onClose={() => setModal(null)} onSubmit={async (input: CreateMakamInput) => ({ ...makam, ...input, pembuat: input.pembuat ?? "Anonim", kronologi: input.kronologi ?? "", kerugianTeks: input.kerugianTeks ?? "", bunga: 0, komentar: [], createdAt: new Date().toISOString() })} onCreated={() => setModal(null)} onVipTheme={(input) => openCheckout(input.tema)} />}
       {modal === "grave" && <GraveDetailModal makam={makam} onClose={() => setModal(null)} onFlower={() => undefined} onComment={async () => undefined} flowerStatus="active" flowerCountdown="besok" vip={false} erosion={getErosionInfo(makam)} onUpgrade={() => openCheckout()} onOpenStory={() => setModal("story")} />}
       {modal === "story" && <StoryStudioModal makam={makam} vip={false} theme="crimson-velvet" onClose={() => setModal(null)} />}
       {modal === "checkout" && <CheckoutModal params={params} onClose={() => setModal(null)} onConfirm={async () => undefined} />}

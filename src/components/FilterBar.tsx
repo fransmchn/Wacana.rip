@@ -95,7 +95,7 @@ export function FilterBar({ category, search, onCategory, onSearch }: FilterBarP
         </div>
       </div>
       <div className="filter-search">
-        <Input ref={inputRef} aria-label="Cari judul atau penyebab" value={search} onChange={(event) => onSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") onSearch(""); }} placeholder="Cari di pemakaman..." leading={<Search size={16} />} trailing={search ? <IconButton size="sm" variant="ghost" label="Hapus pencarian" onClick={() => { onSearch(""); inputRef.current?.focus(); }}><X size={15} /></IconButton> : <span className="search-shortcut" aria-hidden="true">/</span>} />
+        <Input ref={inputRef} label="Cari di pemakaman" aria-label="Cari judul atau penyebab" value={search} onChange={(event) => onSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") onSearch(""); }} leading={<Search size={16} />} trailing={search ? <IconButton size="sm" variant="ghost" label="Hapus pencarian" onClick={() => { onSearch(""); inputRef.current?.focus(); }}><X size={15} /></IconButton> : <span className="search-shortcut" aria-hidden="true">/</span>} />
       </div>
     </div>
   </div>;

@@ -1,5 +1,4 @@
 import { moveThemeOverride, removeThemeOverride, setThemeOverride } from "@/lib/themeService";
-import { isTemaVip } from "@/lib/themes";
 import type { CreateMakamInput, Makam, NisanTema } from "@/types/graveyard";
 
 export const VIP_PRICE = 15_000 as const;
@@ -8,7 +7,6 @@ const TRANSACTION_KEY = "wacana-rip:checkout";
 
 export type PaymentMethod = "qris" | "ewallet";
 export type TransactionStatus = "pending" | "paid" | "failed";
-export type PaymentGatewayMode = "midtrans" | "demo";
 
 /** Satu-satunya kontrak yang dikirim UI ke lapisan pembayaran. */
 export interface CreateCheckoutParams {
@@ -24,9 +22,8 @@ export interface CreateCheckoutParams {
 }
 
 export interface PaymentSessionResponse {
-  mode: PaymentGatewayMode;
   orderId: string;
-  token?: string;
+  token: string;
   redirect_url?: string;
 }
 
@@ -47,6 +44,7 @@ interface MidtransSnapGlobal {
       onClose?: () => void;
     },
   ) => void;
+  hide?: () => void;
 }
 
 declare global {
@@ -72,6 +70,8 @@ export interface VipUpgradeResult {
   paidAt: string;
   transaction: PaymentTransaction;
 }
+
+let snapScriptPromise: Promise<MidtransSnapGlobal> | null = null;
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -110,12 +110,15 @@ function setVipIds(ids: string[]): string[] {
   return unique;
 }
 
-/** Satu sumber kebenaran status VIP: data server, ritual, tema, atau pembelian lokal. */
+/**
+ * Satu sumber kebenaran status VIP: flag server/seed (`vip`), ritual 20+ bunga,
+ * atau pembelian lokal yang terverifikasi (`ids`). Tema saja tidak pernah meloloskan paywall.
+ */
 export function isVipMakam(
   makam: Pick<Makam, "id" | "vip" | "bunga" | "tema">,
   ids: string[] = getVipIds(),
 ): boolean {
-  return Boolean(makam.vip) || makam.bunga >= 20 || isTemaVip(makam.tema) || ids.includes(makam.id);
+  return Boolean(makam.vip) || makam.bunga >= 20 || ids.includes(makam.id);
 }
 
 export function getTransactions(): PaymentTransaction[] {
@@ -128,42 +131,82 @@ function saveTransactions(transactions: PaymentTransaction[]): void {
   writeJson(TRANSACTION_KEY, transactions.slice(-20));
 }
 
-/** Muat script Midtrans Snap secara dinamis saat dibutuhkan. */
+/**
+ * Muat script Midtrans Snap secara aman dengan singleton Promise + timeout guard
+ * agar tidak terjadi race condition saat window.snap.pay() dipanggil.
+ */
 export function loadMidtransSnapScript(): Promise<MidtransSnapGlobal> {
   if (typeof window === "undefined") {
-    return Promise.reject(new Error("Midtrans Snap hanya tersedia di browser."));
+    return Promise.reject(new Error("Jendela pembayaran hanya tersedia di browser."));
   }
-  if (window.snap) return Promise.resolve(window.snap);
+  if (window.snap && typeof window.snap.pay === "function") {
+    return Promise.resolve(window.snap);
+  }
+  if (snapScriptPromise) return snapScriptPromise;
 
   const clientKey = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY?.trim() ?? "";
-  const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true";
+  if (!clientKey) {
+    return Promise.reject(
+      new Error("Konfigurasi pembayaran belum aktif. Silakan coba lagi nanti."),
+    );
+  }
+
+  const isProduction = process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION?.trim().toLowerCase() === "true";
   const scriptUrl = isProduction
     ? "https://app.midtrans.com/snap/snap.js"
     : "https://app.sandbox.midtrans.com/snap/snap.js";
 
-  return new Promise((resolve, reject) => {
+  snapScriptPromise = new Promise<MidtransSnapGlobal>((resolve, reject) => {
+    const finish = (snap?: MidtransSnapGlobal, error?: Error) => {
+      window.clearTimeout(timeoutId);
+      if (snap) {
+        resolve(snap);
+      } else {
+        snapScriptPromise = null;
+        reject(error ?? new Error("Gagal memuat jendela pembayaran. Pastikan koneksi internet stabil."));
+      }
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      finish(undefined, new Error("Waktu muat jendela pembayaran habis. Pastikan koneksi internet stabil lalu coba lagi."));
+    }, 12_000);
+
+    const resolveIfReady = () => {
+      if (window.snap && typeof window.snap.pay === "function") {
+        finish(window.snap);
+        return true;
+      }
+      return false;
+    };
+
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${scriptUrl}"]`);
     if (existing) {
-      if (window.snap) { resolve(window.snap); return; }
+      if (resolveIfReady()) return;
       existing.addEventListener("load", () => {
-        if (window.snap) resolve(window.snap);
-        else reject(new Error("Midtrans Snap gagal diinisialisasi."));
+        if (!resolveIfReady()) finish(undefined, new Error("Gagal memuat jendela pembayaran. Pastikan koneksi internet stabil."));
       }, { once: true });
-      existing.addEventListener("error", () => reject(new Error("Gagal memuat script Midtrans Snap.")), { once: true });
+      existing.addEventListener("error", () => {
+        existing.remove();
+        finish(undefined, new Error("Gagal memuat jendela pembayaran. Pastikan koneksi internet stabil."));
+      }, { once: true });
       return;
     }
 
     const script = document.createElement("script");
     script.src = scriptUrl;
-    if (clientKey) script.setAttribute("data-client-key", clientKey);
+    script.setAttribute("data-client-key", clientKey);
     script.async = true;
     script.onload = () => {
-      if (window.snap) resolve(window.snap);
-      else reject(new Error("Midtrans Snap tidak tersedia setelah script dimuat."));
+      if (!resolveIfReady()) finish(undefined, new Error("Gagal memuat jendela pembayaran. Pastikan koneksi internet stabil."));
     };
-    script.onerror = () => reject(new Error("Gagal memuat Midtrans Snap. Periksa koneksi internet."));
+    script.onerror = () => {
+      script.remove();
+      finish(undefined, new Error("Gagal memuat jendela pembayaran. Pastikan koneksi internet stabil."));
+    };
     document.head.appendChild(script);
   });
+
+  return snapScriptPromise;
 }
 
 /** Buat sesi transaksi ke Next.js API Route (/api/payment/create). */
@@ -184,24 +227,35 @@ export async function createPaymentSession(params: CreateCheckoutParams): Promis
     }),
   });
 
-  const data = (await response.json()) as PaymentSessionResponse & { error?: string };
-  if (!response.ok) {
+  const data = (await response.json()) as Partial<PaymentSessionResponse> & { error?: string };
+  if (!response.ok || !data.token || !data.orderId) {
     throw new Error(data.error || "Gagal memulai sesi pembayaran.");
   }
-  return data;
+  return { token: data.token, orderId: data.orderId, redirect_url: data.redirect_url };
 }
 
-/** Buka popup Midtrans Snap dan kembalikan hasil pembayaran. */
-export async function payWithMidtransSnap(token: string): Promise<{ status: "success" | "pending"; result: SnapPayResult }> {
+/** Buka jendela pembayaran dan kembalikan hasil transaksi. */
+export async function payWithMidtransSnap(
+  token: string,
+  options?: { onBeforeOpen?: () => void },
+): Promise<{ status: "success" | "pending" | "closed"; result?: SnapPayResult }> {
   const snap = await loadMidtransSnapScript();
+  options?.onBeforeOpen?.();
   return new Promise((resolve, reject) => {
     snap.pay(token, {
       onSuccess: (result) => resolve({ status: "success", result }),
       onPending: (result) => resolve({ status: "pending", result }),
-      onError: (result) => reject(new Error(result?.status_message || "Pembayaran Midtrans gagal diproses.")),
-      onClose: () => reject(new Error("Popup pembayaran ditutup sebelum selesai.")),
+      onError: () => reject(new Error("Pembayaran belum berhasil diproses. Silakan coba lagi.")),
+      onClose: () => resolve({ status: "closed" }),
     });
   });
+}
+
+/** Sinkronkan status VIP & tema dari event Supabase Realtime (webhook) ke cache lokal. */
+export function syncVipStatusLocally(graveId: string, selectedTheme?: NisanTema): string[] {
+  if (!graveId) return getVipIds();
+  if (selectedTheme) setThemeOverride(graveId, selectedTheme);
+  return setVipIds([...getVipIds(), graveId]);
 }
 
 /** Catat transaksi berhasil & aktifkan tema VIP secara lokal. */
@@ -248,10 +302,6 @@ export async function createCheckout(params: CreateCheckoutParams, method: Payme
   return transaction;
 }
 
-/**
- * TODO(gateway): ganti dengan verifikasi webhook/server sebelum status paid.
- * Saat ini hanya simulasi dan menulis ke localStorage.
- */
 export async function completeCheckout(transactionId: string): Promise<VipUpgradeResult> {
   const transactions = getTransactions();
   const index = transactions.findIndex((item) => item.id === transactionId);
@@ -277,16 +327,11 @@ export async function completeCheckout(transactionId: string): Promise<VipUpgrad
   };
 }
 
-/** Helper untuk pemanggilan sekali jalan dari provider. */
 export async function upgradeToVip(params: CreateCheckoutParams, method: PaymentMethod = params.method ?? "qris"): Promise<VipUpgradeResult> {
   const transaction = await createCheckout(params, method);
   return completeCheckout(transaction.id);
 }
 
-/**
- * Saat tema VIP dipilih dari modal kubur, pembayaran terjadi atas draft id.
- * Setelah makam asli dibuat, id tersebut ditukar di semua catatan lokal.
- */
 export function replaceVipId(fromId: string, toId: string): string[] {
   if (!fromId || !toId || fromId === toId) return getVipIds();
   const ids = setVipIds(getVipIds().map((id) => (id === fromId ? toId : id)));
@@ -297,7 +342,6 @@ export function replaceVipId(fromId: string, toId: string): string[] {
   return ids;
 }
 
-/** Bersihkan status lokal saat makam digali kembali. */
 export function releaseVipId(graveId: string): void {
   setVipIds(getVipIds().filter((id) => id !== graveId));
   removeThemeOverride(graveId);
@@ -307,7 +351,6 @@ export function buildDraftId(): string {
   return `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-/** Makam sementara hanya untuk checkout tema VIP sebelum wacana disimpan. */
 export function createDraftGrave(input: CreateMakamInput): Makam {
   return {
     id: buildDraftId(),

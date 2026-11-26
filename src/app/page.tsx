@@ -21,7 +21,7 @@ import { useClientNow } from "@/hooks/useClientNow";
 import type { SortKey } from "@/components/FilterBar";
 import type { CreateMakamInput, Kategori, Makam } from "@/types/graveyard";
 import { getDurasiHari, getErosionInfo, type ErosionInfo } from "@/lib/utils";
-import { createDraftGrave, replaceVipId } from "@/lib/payment";
+import { DEFAULT_TEMA } from "@/lib/themes";
 import { resolveTheme } from "@/lib/themeService";
 import { useWibCountdown } from "@/components/useWibCountdown";
 import { useProfile } from "@/hooks/useProfile";
@@ -30,9 +30,9 @@ import { useVipUpgrade } from "@/components/VipUpgradeProvider";
 
 export default function Home() {
   const { makam, statistik, loading, error, bunga, komentar, kuburkan, bungaStatus, refresh, refreshPersonalStatus } = useGraveyard();
-  const { user, configured, signOut } = useAuth();
+  const { user, configured, authError, clearAuthError, signOut } = useAuth();
   const { toast } = useToast();
-  const { vipIds, isVip, requestUpgrade } = useVipUpgrade();
+  const { isVip, requestUpgrade } = useVipUpgrade();
   const router = useRouter();
   const now = useClientNow();
   const { profile: profileRecord, display: profile, mutate: mutateProfile } = useProfile(user);
@@ -48,16 +48,38 @@ export default function Home() {
   const [storyTarget, setStoryTarget] = useState<Makam | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
-  useEffect(() => { const timer = window.setTimeout(() => setSearch(searchInput), 250); return () => window.clearTimeout(timer); }, [searchInput]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(searchInput), 250);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
 
-  const requireLogin = (action: () => void) => { if (!user) { setLoginOpen(true); return; } action(); };
+  useEffect(() => {
+    if (!authError) return;
+    toast(authError, "danger");
+    clearAuthError();
+  }, [authError, clearAuthError, toast]);
+
+  const requireLogin = (action: () => void) => {
+    if (!user) { setLoginOpen(true); return; }
+    action();
+  };
   const openBury = () => requireLogin(() => { setBurySession((session) => session + 1); setBuryOpen(true); });
   const erosion = (item: Makam): ErosionInfo => getErosionInfo(item, now);
-  const vipUnlocked = vipIds.length > 0 || makam.some((item) => item.userId === user?.id && isVip(item));
 
   const upgrade = (item: Makam) => requireLogin(() => requestUpgrade(item, {
     userId: user?.id,
-    onPaid: async () => { await refresh(); },
+    userEmail: user?.email,
+    userName: profile.name,
+    onPaid: async (result) => {
+      await refresh();
+      setSelected((current) =>
+        current && current.id === item.id
+          ? { ...current, vip: true, tema: result.transaction.params.selectedTheme }
+          : current,
+      );
+      setHighlightedId(item.id);
+      window.setTimeout(() => setHighlightedId(null), 2200);
+    },
   }));
 
   function afterCreate(newMakam: Makam) {
@@ -67,20 +89,38 @@ export default function Home() {
     window.setTimeout(() => setStoryTarget(newMakam), 900);
   }
 
-  const vipThemeRequest = (input: CreateMakamInput) => requireLogin(() => {
-    const draft = createDraftGrave(input);
-    requestUpgrade(draft, {
+  /**
+   * Anti-Bypass VIP Creation Flow:
+   * 1. Simpan makam terlebih dahulu sebagai Free tier (`is_vip: false`, `tema: batu-lapuk`).
+   * 2. Langsung buka CheckoutModal untuk `graveId` asli dengan tema VIP terpilih.
+   * 3. Hanya naik ke VIP + tema VIP di `onPaid` setelah pembayaran sukses.
+   *    Jika user batal/tutup modal, makam tetap aman di Lembah Perjuangan (Free).
+   */
+  const vipThemeRequest = async (input: CreateMakamInput) => {
+    if (!user) { setLoginOpen(true); return; }
+    const created = await kuburkan({
+      ...input,
+      tema: DEFAULT_TEMA,
+      vip: false,
+    });
+    setBuryOpen(false);
+    requestUpgrade(created, {
       selectedTheme: input.tema,
-      userId: user?.id,
+      userId: user.id,
+      userEmail: user.email,
+      userName: profile.name,
       onPaid: async (result) => {
         const chosenTheme = result.transaction.params.selectedTheme;
-        const created = await kuburkan({ ...input, tema: chosenTheme, vip: true });
-        replaceVipId(result.graveId, created.id);
         await refresh();
-        afterCreate(created);
+        afterCreate({ ...created, tema: chosenTheme, vip: true });
+      },
+      onCancel: () => {
+        toast("Makam disimpan di Lembah Perjuangan (Batu Lapuk). Kamu bisa upgrade ke VIP kapan saja.", "info");
+        setHighlightedId(created.id);
+        window.setTimeout(() => setHighlightedId(null), 2200);
       },
     });
-  });
+  };
 
   const runRitual = (action: () => Promise<void>) => {
     void action()
@@ -104,7 +144,15 @@ export default function Home() {
   const flowerStatus = (id: string): "active" | "done" | "login" => !user ? "login" : bungaStatus[id]?.sudahMenabur ? "done" : "active";
   const flowerCountdown = (id: string) => { const target = bungaStatus[id]?.berlakuHingga; return target ? countdowns[target] : undefined; };
   const hasFilter = category !== "semua" || search.trim().length > 0;
-  const resetFilters = () => { setCategory("semua"); setSearchInput(""); setSort("terbaru"); };
+  const resetFilters = () => { setCategory("semua"); setSearchInput(""); setSearch(""); setSort("terbaru"); };
+  const resetHomeView = () => {
+    resetFilters();
+    setSelected(null);
+    setBuryOpen(false);
+    setStoryTarget(null);
+    setLoginOpen(false);
+    setProfileOpen(false);
+  };
   const openStory = (item: Makam) => setStoryTarget(makam.find((entry) => entry.id === item.id) ?? item);
 
   function randomPilgrimage() {
@@ -126,6 +174,7 @@ export default function Home() {
       <ExhibitionHUD
         statistik={statistik}
         profile={user ? profile : undefined}
+        onHome={resetHomeView}
         onBury={() => openBury()}
         onLogin={() => setLoginOpen(true)}
         onProfile={() => router.push("/profile")}
@@ -176,9 +225,9 @@ export default function Home() {
         onRandom={randomPilgrimage}
       />
 
-      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} vip={isVip(selected)} erosion={erosion(selected)} onUpgrade={upgrade} onOpenStory={openStory} />}
-      {buryOpen && <BuryModal key={burySession} onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={afterCreate} vipUnlocked={vipUnlocked} onVipTheme={vipThemeRequest} />}
-      {storyTarget && <StoryStudioModal makam={makam.find((item) => item.id === storyTarget.id) ?? storyTarget} vip={isVip(storyTarget)} theme={resolveTheme(storyTarget)} onClose={() => setStoryTarget(null)} />}
+      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} vip={isVip(makam.find((item) => item.id === selected.id) ?? selected)} erosion={erosion(selected)} onUpgrade={upgrade} onOpenStory={openStory} />}
+      {buryOpen && <BuryModal key={burySession} onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={afterCreate} onVipTheme={vipThemeRequest} defaultAuthor={user ? profile.name : ""} />}
+      {storyTarget && <StoryStudioModal makam={makam.find((item) => item.id === storyTarget.id) ?? storyTarget} vip={isVip(makam.find((item) => item.id === storyTarget.id) ?? storyTarget)} theme={resolveTheme(makam.find((item) => item.id === storyTarget.id) ?? storyTarget)} onClose={() => setStoryTarget(null)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       {profileOpen && user && <ProfileModal user={user} profile={profileRecord} onClose={() => setProfileOpen(false)} onSave={async (patch) => { await mutateProfile(patch); }} onLogout={() => void signOut()} />}
       <Footer />

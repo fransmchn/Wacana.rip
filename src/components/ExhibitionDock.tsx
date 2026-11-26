@@ -57,11 +57,11 @@ export function ExhibitionDock({ category, search, count, onCategory, onSearch, 
         <div className="hud-search-panel">
           <Input
             ref={inputRef}
+            label="Cari judul atau penyebab"
             aria-label="Cari monumen"
             value={search}
             onChange={(event) => onSearch(event.target.value)}
             onKeyDown={(event) => { if (event.key === "Enter") setSearchOpen(false); }}
-            placeholder="Cari judul atau penyebab..."
             leading={<Search size={16} />}
             trailing={search ? <IconButton size="sm" variant="ghost" label="Hapus pencarian" onClick={() => { onSearch(""); inputRef.current?.focus(); }}><X size={15} /></IconButton> : undefined}
           />

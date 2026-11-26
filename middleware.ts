@@ -17,8 +17,10 @@ function validConfig(): { url: string; key: string } | null {
 }
 
 export async function middleware(request: NextRequest) {
-  // Defense in depth: assets must never enter auth/session middleware.
-  if (PUBLIC_ASSET.test(request.nextUrl.pathname)) return NextResponse.next();
+  // Defense in depth: assets and OAuth callback must not be interrupted by session refresh.
+  if (PUBLIC_ASSET.test(request.nextUrl.pathname) || request.nextUrl.pathname.startsWith("/auth/callback")) {
+    return NextResponse.next();
+  }
 
   const config = validConfig();
   if (!config) return NextResponse.next({ request });

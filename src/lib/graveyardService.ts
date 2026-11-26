@@ -1,8 +1,8 @@
-import { releaseVipId } from "@/lib/payment";
+import { getVipIds, isVipMakam, releaseVipId } from "@/lib/payment";
 import { seedData } from "@/lib/seedData";
 import { applyThemeOverrides, getThemeOverride, setThemeOverride } from "@/lib/themeService";
 import { createId } from "@/lib/utils";
-import { DEFAULT_TEMA, getTemaNisan, isNisanTema } from "@/lib/themes";
+import { DEFAULT_TEMA, getTemaNisan, isNisanTema, isTemaVip } from "@/lib/themes";
 import { createSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import { KATEGORI, normalizeKategori, type CreateMakamInput, type EditMakamInput, type KomentarInput, type Komentar, type Makam, type NisanTema, type Statistik } from "@/types/graveyard";
@@ -138,17 +138,21 @@ function mapComment(row: KomentarRow): Komentar {
   return { id: row.id, nama: row.nama_tampil, isi: row.isi, createdAt: row.created_at };
 }
 
-function mapMakam(row: MakamRow, komentar: Komentar[] = []): Makam {
+function mapMakam(row: MakamRow, komentar: Komentar[] = [], authorName?: string): Makam {
   const seedHint = SEED_THEME_BY_TITLE[row.judul.trim().toLowerCase()];
   const dbTema = isNisanTema(row.tema) ? row.tema : undefined;
-  const resolvedTema = getThemeOverride(row.id) ?? dbTema ?? seedHint?.tema ?? DEFAULT_TEMA;
   const resolvedVip = Boolean(row.is_vip) || Boolean(seedHint?.vip);
+  const canUseVipTheme = resolvedVip || row.bunga_count >= 20 || getVipIds().includes(row.id);
+  const candidateTema = getThemeOverride(row.id) ?? dbTema ?? seedHint?.tema ?? DEFAULT_TEMA;
+  const resolvedTema = !canUseVipTheme && isTemaVip(candidateTema) ? DEFAULT_TEMA : candidateTema;
+  const pembuat = row.tampil_anonim ? "Anonim" : (authorName?.trim() || "Anonim");
+
   return {
     id: row.id,
     userId: row.user_id ?? undefined,
     judul: row.judul,
     kategori: row.kategori,
-    pembuat: row.tampil_anonim ? "Anonim" : "Anonim",
+    pembuat,
     tanggalMulai: row.tanggal_mulai,
     tanggalMenyerah: row.tanggal_menyerah,
     penyebab: row.penyebab,
@@ -163,6 +167,26 @@ function mapMakam(row: MakamRow, komentar: Komentar[] = []): Makam {
     komentar,
     createdAt: row.created_at,
   };
+}
+
+async function fetchAuthorNames(
+  client: NonNullable<SupabaseClient>,
+  userIds: Array<string | null | undefined>,
+): Promise<Map<string, string>> {
+  const uniqueIds = Array.from(new Set(userIds.filter((id): id is string => Boolean(id))));
+  const map = new Map<string, string>();
+  if (!uniqueIds.length) return map;
+  try {
+    const result = await client.from("profiles").select("id, display_name").in("id", uniqueIds);
+    if (!result.error && Array.isArray(result.data)) {
+      for (const row of result.data as Array<{ id: string; display_name?: string | null }>) {
+        if (row.id && row.display_name?.trim()) map.set(row.id, row.display_name.trim());
+      }
+    }
+  } catch {
+    /* Profil bersifat best-effort agar tamu tidak pernah gagal memuat makam. */
+  }
+  return map;
 }
 
 function throwSupabase(error: { message: string } | null): void {
@@ -187,7 +211,11 @@ export async function listMakam(): Promise<Makam[]> {
   if (!client) return localFallback(readLocal);
   const result = await client.from("makam").select("*").order("tanggal_menyerah", { ascending: false });
   throwSupabase(result.error);
-  return Promise.all((result.data ?? []).map(async (row) => mapMakam(row, await getRemoteComments(client, row.id))));
+  const rows = (result.data ?? []) as MakamRow[];
+  const authors = await fetchAuthorNames(client, rows.map((row) => row.user_id));
+  return Promise.all(
+    rows.map(async (row) => mapMakam(row, await getRemoteComments(client, row.id), row.user_id ? authors.get(row.user_id) : undefined)),
+  );
 }
 
 export async function getMakam(id: string): Promise<Makam | null> {
@@ -195,17 +223,43 @@ export async function getMakam(id: string): Promise<Makam | null> {
   if (!client) return localFallback(() => readLocal().find((makam) => makam.id === id) ?? null);
   const result = await client.from("makam").select("*").eq("id", id).maybeSingle();
   throwSupabase(result.error);
-  return result.data ? mapMakam(result.data, await getRemoteComments(client, id)) : null;
+  if (!result.data) return null;
+  const row = result.data as MakamRow;
+  const authors = await fetchAuthorNames(client, [row.user_id]);
+  return mapMakam(row, await getRemoteComments(client, id), row.user_id ? authors.get(row.user_id) : undefined);
 }
 
 export async function createMakam(rawInput: CreateMakamInput): Promise<Makam> {
   const input = assertInput(rawInput);
+  // Paywall Guard: form pembuatan makam tidak boleh langsung memasang status VIP atau tema VIP.
+  // Upgrade VIP hanya sah lewat persistVipUpgrade() setelah pembayaran terverifikasi.
+  const safeTema: NisanTema = isTemaVip(input.tema) ? DEFAULT_TEMA : input.tema;
   const client = supabase();
   if (!client) return localFallback(() => {
-    const makam: Makam = { id: createId(), userId: "local", judul: input.judul, kategori: input.kategori, pembuat: input.pembuat ?? "Anonim", tanggalMulai: input.tanggalMulai, tanggalMenyerah: input.tanggalMenyerah, penyebab: input.penyebab, epitaph: input.epitaph, kronologi: input.kronologi ?? "", kerugianTeks: input.kerugianTeks ?? "", ...(input.kerugianRupiah === undefined ? {} : { kerugianRupiah: input.kerugianRupiah }), ...(input.kerugianJam === undefined ? {} : { kerugianJam: input.kerugianJam }), bunga: 0, tema: input.tema, ...(input.vip ? { vip: true } : {}), komentar: [], createdAt: new Date().toISOString() };
+    const makam: Makam = {
+      id: createId(),
+      userId: "local",
+      judul: input.judul,
+      kategori: input.kategori,
+      pembuat: input.pembuat ?? "Anonim",
+      tanggalMulai: input.tanggalMulai,
+      tanggalMenyerah: input.tanggalMenyerah,
+      penyebab: input.penyebab,
+      epitaph: input.epitaph,
+      kronologi: input.kronologi ?? "",
+      kerugianTeks: input.kerugianTeks ?? "",
+      ...(input.kerugianRupiah === undefined ? {} : { kerugianRupiah: input.kerugianRupiah }),
+      ...(input.kerugianJam === undefined ? {} : { kerugianJam: input.kerugianJam }),
+      bunga: 0,
+      tema: safeTema,
+      vip: false,
+      komentar: [],
+      createdAt: new Date().toISOString(),
+    };
     const makamList = readLocal();
     makamList.unshift(makam);
     writeLocal(makamList);
+    setThemeOverride(makam.id, safeTema);
     return makam;
   });
   const userId = await requireUser(client);
@@ -222,20 +276,23 @@ export async function createMakam(rawInput: CreateMakamInput): Promise<Makam> {
     kerugian_rupiah: input.kerugianRupiah ?? null,
     kerugian_jam: input.kerugianJam ?? null,
   };
-  // Coba simpan `tema` & `is_vip` ke Supabase terlebih dahulu; jika schema remote
-  // belum punya kolom tersebut, fallback otomatis ke payload dasar tanpa gagal.
   let result = await client.from("makam").insert({
     ...basePayload,
-    tema: input.tema,
-    is_vip: Boolean(input.vip),
+    tema: safeTema,
+    is_vip: false,
   }).select("*").single();
   if (isMissingColumnError(result.error)) {
     result = await client.from("makam").insert(basePayload).select("*").single();
   }
   throwSupabase(result.error);
   if (!result.data) throw new Error("Supabase tidak mengembalikan makam baru.");
-  setThemeOverride(result.data.id, input.tema);
-  return { ...mapMakam(result.data), tema: input.tema, ...(input.vip ? { vip: true } : {}) };
+  setThemeOverride(result.data.id, safeTema);
+  const authors = await fetchAuthorNames(client, [userId]);
+  return {
+    ...mapMakam(result.data as MakamRow, [], authors.get(userId) ?? input.pembuat),
+    tema: safeTema,
+    vip: false,
+  };
 }
 
 /** Makam milik pengguna. Mode lokal memakai semua data demo sebagai "milik saya". */
@@ -245,10 +302,13 @@ export async function listMakamSaya(userId?: string): Promise<Makam[]> {
   if (!userId) throw new Error("Masuk dulu untuk melihat makammu.");
   const result = await client.from("makam").select("*").eq("user_id", userId).order("created_at", { ascending: false });
   throwSupabase(result.error);
-  return Promise.all((result.data ?? []).map(async (row) => mapMakam(row, await getRemoteComments(client, row.id))));
+  const rows = (result.data ?? []) as MakamRow[];
+  const authors = await fetchAuthorNames(client, [userId]);
+  const ownerName = authors.get(userId);
+  return Promise.all(rows.map(async (row) => mapMakam(row, await getRemoteComments(client, row.id), ownerName)));
 }
 
-/** Sunting catatan dan tema nisan; tanggal serta kerugian tetap dipertahankan. */
+/** Sunting catatan dan tema nisan; makam non-VIP tidak bisa langsung memasang tema VIP tanpa pembayaran. */
 export async function updateMakam(id: string, rawInput: EditMakamInput, userId?: string): Promise<Makam> {
   const rawKategori = typeof rawInput.kategori === "string" ? rawInput.kategori.trim().toLowerCase() : "";
   if (!(KATEGORI as readonly string[]).includes(rawKategori)) throw new Error("Kategori tidak valid.");
@@ -265,9 +325,31 @@ export async function updateMakam(id: string, rawInput: EditMakamInput, userId?:
 
   const client = supabase();
   if (!client) return localFallback(() => {
+    const existing = readLocal().find((item) => item.id === id);
+    if (!existing) throw new Error("Makam tidak ditemukan.");
+    if (isTemaVip(input.tema) && !isVipMakam(existing)) {
+      throw new Error("Upgrade ke VIP diperlukan untuk memasang tema premium.");
+    }
     setThemeOverride(id, input.tema);
     return updateLocal(id, (makam) => ({ ...makam, ...input }));
   });
+
+  // Verifikasi status VIP makam di database sebelum mengizinkan tema VIP
+  const existingCheck = await client.from("makam").select("*").eq("id", id).maybeSingle();
+  throwSupabase(existingCheck.error);
+  if (!existingCheck.data) throw new Error("Makam tidak ditemukan atau bukan milikmu.");
+  const existingRow = existingCheck.data as MakamRow;
+  const seedHint = SEED_THEME_BY_TITLE[existingRow.judul.trim().toLowerCase()];
+  const alreadyVip =
+    Boolean(existingRow.is_vip) ||
+    Boolean(seedHint?.vip) ||
+    existingRow.bunga_count >= 20 ||
+    getVipIds().includes(id);
+
+  if (isTemaVip(input.tema) && !alreadyVip) {
+    throw new Error("Upgrade ke VIP diperlukan untuk memasang tema premium.");
+  }
+
   const baseUpdate = {
     judul: input.judul,
     kategori: input.kategori,
@@ -285,7 +367,11 @@ export async function updateMakam(id: string, rawInput: EditMakamInput, userId?:
   throwSupabase(result.error);
   if (!result.data) throw new Error("Makam tidak ditemukan atau bukan milikmu.");
   setThemeOverride(id, input.tema);
-  return { ...mapMakam(result.data, await getRemoteComments(client, id)), tema: input.tema };
+  const authors = await fetchAuthorNames(client, [(result.data as MakamRow).user_id]);
+  return {
+    ...mapMakam(result.data as MakamRow, await getRemoteComments(client, id), authors.get((result.data as MakamRow).user_id ?? "")),
+    tema: input.tema,
+  };
 }
 
 /** Sinkronkan upgrade VIP & tema ke Supabase (graceful jika kolom belum ada) serta localStorage. */
