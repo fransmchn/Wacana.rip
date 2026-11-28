@@ -35,6 +35,7 @@ export function normalizeKategori(value: unknown): KategoriDb {
 
 export const NISAN_TEMA = ["batu-lapuk", "beton-retak", "obsidian-emas", "marmer-lumut", "y2k-chrome", "crimson-velvet"] as const;
 export type NisanTema = (typeof NISAN_TEMA)[number];
+export type SortKey = "terbaru" | "terlama" | "bunga" | "pendek";
 
 export interface Komentar {
   id: string;
@@ -61,6 +62,9 @@ export interface Makam {
   tema?: NisanTema;
   /** Makam Abadi VIP — dikunci dari erosi dan memakai monumen lebih besar. */
   vip?: boolean;
+  /** Kapsul Waktu VIP — pesan rahasia yang terkunci hingga tanggal kebangkitan. */
+  capsuleMessage?: string;
+  capsuleUnlockAt?: string;
   /** Pemilik makam; dipakai untuk daftar dan aksi CRUD di profil. */
   userId?: string;
   komentar: Komentar[];

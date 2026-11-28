@@ -1,5 +1,5 @@
-import { moveThemeOverride, removeThemeOverride, setThemeOverride } from "@/lib/themeService";
-import type { CreateMakamInput, Makam, NisanTema } from "@/types/graveyard";
+import { removeThemeOverride, setThemeOverride } from "@/lib/themeService";
+import type { Makam, NisanTema } from "@/types/graveyard";
 
 export const VIP_PRICE = 15_000 as const;
 export const VIP_STORAGE_KEY = "wacana-rip:vip";
@@ -90,13 +90,6 @@ function writeJson(key: string, value: unknown): void {
   } catch {
     /* localStorage tidak tersedia; status tetap berlaku di memori provider. */
   }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof window === "undefined") { resolve(); return; }
-    window.setTimeout(resolve, ms);
-  });
 }
 
 export function getVipIds(): string[] {
@@ -287,87 +280,8 @@ export function recordPaidUpgrade(
   };
 }
 
-export async function createCheckout(params: CreateCheckoutParams, method: PaymentMethod = params.method ?? "qris"): Promise<PaymentTransaction> {
-  if (!params.graveId?.trim()) throw new Error("Makam tidak ditemukan.");
-  if (params.amount !== VIP_PRICE) throw new Error("Nominal upgrade tidak valid.");
-  await delay(180);
-  const transaction: PaymentTransaction = {
-    id: `TRX-${Date.now().toString(36).toUpperCase()}`,
-    status: "pending",
-    method,
-    params: { ...params, method },
-    createdAt: new Date().toISOString(),
-  };
-  saveTransactions([...getTransactions(), transaction]);
-  return transaction;
-}
-
-export async function completeCheckout(transactionId: string): Promise<VipUpgradeResult> {
-  const transactions = getTransactions();
-  const index = transactions.findIndex((item) => item.id === transactionId);
-  if (index === -1) throw new Error("Transaksi tidak ditemukan.");
-  const transaction = transactions[index];
-  await delay(420);
-
-  const paidAt = new Date().toISOString();
-  const paid: PaymentTransaction = { ...transaction, status: "paid", paidAt };
-  transactions[index] = paid;
-  saveTransactions(transactions);
-
-  setThemeOverride(transaction.params.graveId, transaction.params.selectedTheme);
-  const ids = setVipIds([...getVipIds(), transaction.params.graveId]);
-
-  return {
-    graveId: transaction.params.graveId,
-    ids,
-    method: transaction.method,
-    receiptId: paid.id,
-    paidAt,
-    transaction: paid,
-  };
-}
-
-export async function upgradeToVip(params: CreateCheckoutParams, method: PaymentMethod = params.method ?? "qris"): Promise<VipUpgradeResult> {
-  const transaction = await createCheckout(params, method);
-  return completeCheckout(transaction.id);
-}
-
-export function replaceVipId(fromId: string, toId: string): string[] {
-  if (!fromId || !toId || fromId === toId) return getVipIds();
-  const ids = setVipIds(getVipIds().map((id) => (id === fromId ? toId : id)));
-  moveThemeOverride(fromId, toId);
-  saveTransactions(getTransactions().map((item) => item.params.graveId === fromId
-    ? { ...item, params: { ...item.params, graveId: toId, metadata: { ...item.params.metadata, draft: false } } }
-    : item));
-  return ids;
-}
-
+/** Bersihkan status lokal saat makam digali kembali. */
 export function releaseVipId(graveId: string): void {
   setVipIds(getVipIds().filter((id) => id !== graveId));
   removeThemeOverride(graveId);
-}
-
-export function buildDraftId(): string {
-  return `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-export function createDraftGrave(input: CreateMakamInput): Makam {
-  return {
-    id: buildDraftId(),
-    judul: input.judul,
-    kategori: input.kategori,
-    pembuat: input.pembuat || "Anonim",
-    tanggalMulai: input.tanggalMulai,
-    tanggalMenyerah: input.tanggalMenyerah,
-    penyebab: input.penyebab,
-    epitaph: input.epitaph,
-    kronologi: input.kronologi ?? "",
-    kerugianTeks: input.kerugianTeks ?? "",
-    ...(input.kerugianRupiah === undefined ? {} : { kerugianRupiah: input.kerugianRupiah }),
-    ...(input.kerugianJam === undefined ? {} : { kerugianJam: input.kerugianJam }),
-    bunga: 0,
-    tema: input.tema,
-    komentar: [],
-    createdAt: new Date().toISOString(),
-  };
 }

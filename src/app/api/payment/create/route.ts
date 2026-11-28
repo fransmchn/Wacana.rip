@@ -1,35 +1,49 @@
 import { NextResponse } from "next/server";
-import { getTemaNisan, isNisanTema } from "@/lib/themes";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { getTemaNisan, isNisanTema, isTemaVip } from "@/lib/themes";
 import type { NisanTema } from "@/types/graveyard";
 
 interface CreatePaymentBody {
-  graveId?: string;
-  graveTitle?: string;
-  selectedTheme?: string;
-  userEmail?: string;
-  userName?: string;
-  amount?: number;
+  graveId?: unknown;
+  graveTitle?: unknown;
+  selectedTheme?: unknown;
+  userEmail?: unknown;
+  userName?: unknown;
 }
 
-const VIP_AMOUNT = 15_000;
+/** Harga VIP dikunci ketat di server (IDR) — tidak pernah mempercayai `amount` dari klien. */
+const SERVER_VIP_PRICE_IDR = 15_000;
+const GRAVE_ID_RE = /^[a-zA-Z0-9_-]{4,64}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function sanitizeMidtransText(value: string, maxLen: number, fallback: string): string {
+function sanitizePaymentText(value: unknown, maxLen: number, fallback: string): string {
+  if (typeof value !== "string") return fallback;
   const cleaned = value
+    .replace(/<[^>]*>/g, " ")
     .replace(/[^\p{L}\p{N}\s.,\-()]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
   return (cleaned || fallback).slice(0, maxLen);
 }
 
-function buildMidtransOrderId(graveId: string): string {
+function buildOrderId(graveId: string): string {
   const safeSuffix = graveId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8) || "VIP";
-  // Midtrans membatasi order_id maksimal 50 karakter dan hanya alfanumerik, '-', '_'.
+  // Batas maksimum order_id gateway adalah 50 karakter alfanumerik/'-'/'_'.
   return `GRAVEYARD-${Date.now()}-${safeSuffix}`.slice(0, 50);
 }
 
 export async function POST(request: Request) {
   try {
+    // Rate limit per IP: maksimal 12 permintaan sesi pembayaran per menit
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`pay-create:${ip}`, 12, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Terlalu banyak permintaan pembayaran. Tunggu sebentar lalu coba lagi." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
+      );
+    }
+
     let body: CreatePaymentBody;
     try {
       body = (await request.json()) as CreatePaymentBody;
@@ -37,19 +51,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Payload JSON tidak valid." }, { status: 400 });
     }
 
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Format permintaan tidak valid." }, { status: 400 });
+    }
+
     const graveId = typeof body.graveId === "string" ? body.graveId.trim() : "";
-    const graveTitle = typeof body.graveTitle === "string" ? body.graveTitle.trim() : "Makam Abadi";
-    const selectedTheme: NisanTema = isNisanTema(body.selectedTheme) ? body.selectedTheme : "obsidian-emas";
-    const amount = typeof body.amount === "number" && Number.isFinite(body.amount) ? Math.round(body.amount) : VIP_AMOUNT;
-
-    if (!graveId) {
-      return NextResponse.json({ error: "graveId wajib diisi." }, { status: 400 });
-    }
-    if (amount !== VIP_AMOUNT) {
-      return NextResponse.json({ error: `Nominal pembayaran VIP harus Rp ${VIP_AMOUNT.toLocaleString("id-ID")}.` }, { status: 400 });
+    if (!GRAVE_ID_RE.test(graveId)) {
+      return NextResponse.json({ error: "Identitas makam tidak valid." }, { status: 400 });
     }
 
-    const orderId = buildMidtransOrderId(graveId);
+    // Validasi whitelist tema VIP
+    if (!isNisanTema(body.selectedTheme) || !isTemaVip(body.selectedTheme)) {
+      return NextResponse.json({ error: "Tema VIP yang dipilih tidak valid." }, { status: 400 });
+    }
+    const selectedTheme: NisanTema = body.selectedTheme;
+
+    const graveTitle = sanitizePaymentText(body.graveTitle, 120, "Makam Abadi");
+    const orderId = buildOrderId(graveId);
     const serverKey = process.env.MIDTRANS_SERVER_KEY?.trim();
 
     if (!serverKey) {
@@ -61,15 +79,8 @@ export async function POST(request: Request) {
 
     const isProduction = process.env.MIDTRANS_IS_PRODUCTION?.trim().toLowerCase() === "true";
     const isSandboxKey = serverKey.startsWith("SB-");
-    if (isProduction && isSandboxKey) {
-      console.error("[graveyard-payment] Mode production aktif tetapi server key adalah Sandbox (SB-...).");
-      return NextResponse.json(
-        { error: "Konfigurasi pembayaran belum aktif di server." },
-        { status: 503 },
-      );
-    }
-    if (!isProduction && !isSandboxKey && serverKey.startsWith("Mid-server-")) {
-      console.error("[graveyard-payment] Mode sandbox aktif tetapi server key adalah Production.");
+    if ((isProduction && isSandboxKey) || (!isProduction && !isSandboxKey && serverKey.startsWith("Mid-server-"))) {
+      console.error("[graveyard-payment] Ketidakcocokan mode sandbox/production dengan server key.");
       return NextResponse.json(
         { error: "Konfigurasi pembayaran belum aktif di server." },
         { status: 503 },
@@ -83,20 +94,20 @@ export async function POST(request: Request) {
     const tema = getTemaNisan(selectedTheme);
     const authHeader = `Basic ${Buffer.from(`${serverKey}:`).toString("base64")}`;
 
-    const rawEmail = typeof body.userEmail === "string" ? body.userEmail.trim() : "";
+    const rawEmail = typeof body.userEmail === "string" ? body.userEmail.trim().slice(0, 120) : "";
     const customerEmail = EMAIL_RE.test(rawEmail) ? rawEmail : "peziarah@graveyard.rip";
-    const customerName = sanitizeMidtransText(body.userName ?? "", 45, "Peziarah GRAVEYARD");
-    const itemName = sanitizeMidtransText(`VIP ${tema.label} - ${graveTitle}`, 50, `VIP ${tema.label}`);
+    const customerName = sanitizePaymentText(body.userName, 45, "Peziarah GRAVEYARD");
+    const itemName = sanitizePaymentText(`VIP ${tema.label} - ${graveTitle}`, 50, `VIP ${tema.label}`);
 
     const payload = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: amount,
+        gross_amount: SERVER_VIP_PRICE_IDR,
       },
       item_details: [
         {
           id: selectedTheme,
-          price: amount,
+          price: SERVER_VIP_PRICE_IDR,
           quantity: 1,
           name: itemName,
         },
@@ -158,6 +169,6 @@ export async function POST(request: Request) {
   } catch (reason) {
     const message = reason instanceof Error ? reason.message : "Gagal membuat transaksi pembayaran.";
     console.error("[graveyard-payment] Create route exception:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "Terjadi kesalahan saat menyiapkan gerbang pembayaran." }, { status: 500 });
   }
 }

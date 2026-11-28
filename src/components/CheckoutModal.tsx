@@ -28,10 +28,10 @@ interface CheckoutModalProps {
 }
 
 const BENEFITS = [
-  "Pilih salah satu dari 4 material nisan VIP eksklusif",
-  "Monumen lebih besar dengan emblem mahkota & aura cahaya",
-  "Terlindungi permanen dari erosi 7 hari (Bukit Kehormatan)",
-  "Ekspor Story Studio premium tanpa watermark besar",
+  "Akses penuh 4 material VIP (Obsidian Emas, Marmer Lumut, Y2K Chrome, Crimson Velvet) — bebas ganti kapan saja",
+  "Akta Gugur Resmi (Official Death Certificate) bersegel emas & nomor seri unik GRV-2026-XXXX",
+  "Kapsul Waktu (Time Capsule): segel pesan kebangkitan rahasia dengan tanggal buka otomatis",
+  "Monumen abadi bebas erosi di Bukit Kehormatan + suasana lilin abadi & segel VIP ARCHIVE di Story Studio",
 ];
 
 export function CheckoutModal({ params, onClose, onConfirm }: CheckoutModalProps) {

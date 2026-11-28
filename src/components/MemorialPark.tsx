@@ -7,8 +7,7 @@ import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Monument } from "@/components/Monument";
 import { usePointerGlow } from "@/hooks/usePointerGlow";
-import type { SortKey } from "@/components/FilterBar";
-import type { Makam } from "@/types/graveyard";
+import type { Makam, SortKey } from "@/types/graveyard";
 import type { ErosionInfo } from "@/lib/utils";
 
 interface MemorialParkProps {

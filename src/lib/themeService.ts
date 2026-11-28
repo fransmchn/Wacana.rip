@@ -1,4 +1,4 @@
-import { DEFAULT_TEMA, isNisanTema, temaMakam } from "@/lib/themes";
+import { isNisanTema, temaMakam } from "@/lib/themes";
 import type { Makam, NisanTema } from "@/types/graveyard";
 
 export const THEME_STORAGE_KEY = "wacana-rip:themes";
@@ -50,17 +50,4 @@ export function applyThemeOverrides(makam: Makam[]): Makam[] {
   const themes = readThemes();
   if (!Object.keys(themes).length) return makam;
   return makam.map((item) => (themes[item.id] ? { ...item, tema: themes[item.id] } : item));
-}
-
-/** Dipakai saat draft VIP dibayar lalu makam asli dibuat. */
-export function moveThemeOverride(fromId: string, toId: string): void {
-  const themes = readThemes();
-  const tema = themes[fromId];
-  delete themes[fromId];
-  if (tema) themes[toId] = tema;
-  writeThemes(themes);
-}
-
-export function defaultTheme(): NisanTema {
-  return DEFAULT_TEMA;
 }

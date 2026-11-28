@@ -164,6 +164,8 @@ function mapMakam(row: MakamRow, komentar: Komentar[] = [], authorName?: string)
     bunga: row.bunga_count,
     tema: resolvedTema,
     ...(resolvedVip ? { vip: true } : {}),
+    ...(row.capsule_message ? { capsuleMessage: row.capsule_message } : {}),
+    ...(row.capsule_unlock_at ? { capsuleUnlockAt: row.capsule_unlock_at } : {}),
     komentar,
     createdAt: row.created_at,
   };

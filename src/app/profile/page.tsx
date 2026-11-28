@@ -271,7 +271,18 @@ export default function ProfilePage() {
       {buryOpen && <BuryModal key={burySession} onClose={() => setBuryOpen(false)} onSubmit={(input) => persistGrave(input)} onCreated={afterCreate} onVipTheme={vipThemeRequest} defaultAuthor={user ? profile.name : ""} />}
       {editTarget && <EditGraveModal makam={editTarget} onClose={() => setEditTarget(null)} onSave={saveEdit} isGraveVip={isVip(editTarget)} onUpgradeTheme={upgradeTheme} />}
       {digTarget && <DigUpConfirmModal makam={digTarget} onClose={() => setDigTarget(null)} onConfirm={digUp} />}
-      {storyTarget && <StoryStudioModal makam={graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget} vip={isVip(graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget)} theme={resolveTheme(graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget)} onClose={() => setStoryTarget(null)} />}
+      {storyTarget && (() => {
+        const activeStory = graves.find((grave) => grave.id === storyTarget.id) ?? storyTarget;
+        return (
+          <StoryStudioModal
+            makam={activeStory}
+            vip={isVip(activeStory)}
+            theme={resolveTheme(activeStory)}
+            onClose={() => setStoryTarget(null)}
+            onUpgrade={(target) => { setStoryTarget(null); upgrade(target); }}
+          />
+        );
+      })()}
     </main>
   );
 }

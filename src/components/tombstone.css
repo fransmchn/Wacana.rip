@@ -1,103 +1,27 @@
 /* ============================================================
-   Kuburan sebagai lanskap, bukan kartu-kartu seragam.
+   GRAVEYARD — Monument Material System & Ritual Petals
+   Six unmistakably distinct tactile stone/metal finishes.
    ============================================================ */
+
 .tombstone {
-  --tomb-ink: #efe6d5;
-  --tomb-ink-muted: #c7bba6;
-  --tomb-line: rgb(239 230 213 / .26);
-  --theme-accent: #c9bda9;
-  --tomb-action-bg: rgb(51 45 40);
+  --tomb-ink: #f3efe7;
+  --tomb-ink-muted: #b5afa4;
+  --tomb-line: rgba(243 239 231 / .2);
+  --theme-accent: #d6a85a;
+  --tomb-action-bg: #17171c;
   --tomb-action-ink: var(--tomb-ink);
-  --tomb-action-hover-bg: rgb(78 68 56);
-  --tomb-action-hover-border: var(--tomb-ink);
-  --tomb-action-disabled-bg: rgb(63 55 48);
-  --tomb-action-disabled-ink: var(--tomb-ink-muted);
+  --tomb-action-hover-bg: #23232a;
+  --tomb-action-hover-border: var(--theme-accent);
+  --tomb-action-disabled-bg: #151519;
+  --tomb-action-disabled-ink: #76726a;
   --tomb-action-disabled-border: var(--tomb-line);
   position: relative;
-  display: flex;
-  width: 100%;
-  min-width: 0;
-  min-height: 442px;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid;
-  border-radius: 96px 96px 14px 14px;
   color: var(--tomb-ink);
-  cursor: default;
   transition: transform var(--duration-standard) var(--ease-standard), box-shadow var(--duration-standard) var(--ease-standard), border-color var(--duration-standard) var(--ease-standard);
-  animation: tombstone-entry .55s var(--ease-standard) both;
-  animation-delay: var(--stagger, 0ms);
-  will-change: auto;
 }
-.tombstone:hover { transform: translateY(-7px); }
 .tombstone:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 5px; }
-.tombstone:has(.tombstone-title:focus-visible) { outline: 2px solid var(--theme-accent); outline-offset: 4px; }
-.tombstone:active { transform: translateY(-2px); }
-.tombstone-new { box-shadow: 0 0 0 1px var(--theme-accent), 0 0 34px rgba(245 158 11 / .2); }
-@keyframes tombstone-entry { from { opacity: 0; transform: translateY(20px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-/* 1. Batu Lapuk (Free) — Weathered matte grey stone, flat top --- */
-.tombstone.tombstone-theme-batu-lapuk,
-.tombstone[data-theme="batu-lapuk"] {
-  --theme-accent: #a1a1aa;
-  --tomb-ink: #e4e4e7;
-  --tomb-ink-muted: #a1a1aa;
-  --tomb-line: rgba(161 161 170 / .3);
-  --tomb-action-bg: #27272a;
-  --tomb-action-ink: #d4d4d8;
-  --tomb-action-hover-bg: #3f3f46;
-  --tomb-action-hover-border: #a1a1aa;
-  --tomb-action-disabled-bg: #27272a;
-  --tomb-action-disabled-ink: #71717a;
-  border: 1.5px solid #52525b;
-  border-radius: 12px 12px 6px 6px;
-  background: linear-gradient(160deg, #3f3f46 0%, #323238 52%, #27272a 100%);
-  box-shadow: inset 0 1px 0 rgba(255 255 255 / .08), inset -12px -10px 28px rgba(0 0 0 / .42), 12px 20px 36px rgba(0 0 0 / .4);
-}
-.tombstone.tombstone-theme-batu-lapuk::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  opacity: .38;
-  background:
-    radial-gradient(circle at 20% 28%, rgba(255 255 255 / .05) 0 1.5px, transparent 2px) 0 0 / 18px 18px,
-    radial-gradient(circle at 75% 68%, rgba(0 0 0 / .22) 0 1.5px, transparent 2px) 0 0 / 22px 22px,
-    repeating-linear-gradient(104deg, transparent 0 19px, rgba(255 255 255 / .025) 20px 21px, transparent 22px 38px);
-  pointer-events: none;
-}
-.tombstone.tombstone-theme-batu-lapuk .tombstone-cap { border-radius: 2px; border-top-color: rgba(161 161 170 / .25); }
-
-/* 2. Beton Retak (Free) — Cool industrial concrete, sharp slab -- */
-.tombstone.tombstone-theme-beton-retak,
-.tombstone[data-theme="beton-retak"] {
-  --theme-accent: #94a3b8;
-  --tomb-ink: #e2e8f0;
-  --tomb-ink-muted: #94a3b8;
-  --tomb-line: rgba(148 163 184 / .32);
-  --tomb-action-bg: #1e293b;
-  --tomb-action-ink: #e2e8f0;
-  --tomb-action-hover-bg: #334155;
-  --tomb-action-hover-border: #cbd5e1;
-  --tomb-action-disabled-bg: #1e293b;
-  --tomb-action-disabled-ink: #64748b;
-  border: 1.5px solid #475569;
-  border-radius: 3px;
-  background: linear-gradient(155deg, #334155 0%, #263344 52%, #1e293b 100%);
-  box-shadow: inset 0 1px 0 rgba(226 232 240 / .1), inset -14px -10px 30px rgba(0 0 0 / .45), 14px 22px 38px rgba(0 0 0 / .45);
-}
-.tombstone.tombstone-theme-beton-retak::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  opacity: .5;
-  background:
-    repeating-linear-gradient(90deg, rgba(15 23 42 / .14) 0 1px, transparent 1px 28px),
-    linear-gradient(125deg, transparent 22%, rgba(15 23 42 / .55) 22.3% 22.7%, transparent 23%);
-  pointer-events: none;
-}
-.tombstone.tombstone-theme-beton-retak .tombstone-cap { border-radius: 0; }
+/* Crack SVG overlay for Beton Retak --------------------------- */
 .tombstone-crack-svg {
   position: absolute;
   z-index: 2;
@@ -105,246 +29,273 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  opacity: .72;
+  opacity: .74;
 }
 
-/* 3. Obsidian Emas (VIP) — Pitch-black obsidian, gold double border & halo */
-.tombstone.tombstone-theme-obsidian-emas,
-.tombstone[data-theme="obsidian-emas"] {
-  --theme-accent: #fbbf24;
-  --tomb-ink: #fef3c7;
-  --tomb-ink-muted: #fcd34d;
-  --tomb-line: rgba(245 158 11 / .5);
-  --tomb-action-bg: rgba(245 158 11 / .14);
-  --tomb-action-ink: #fef3c7;
-  --tomb-action-hover-bg: rgba(245 158 11 / .28);
-  --tomb-action-hover-border: #fbbf24;
-  --tomb-action-disabled-bg: rgba(245 158 11 / .08);
-  --tomb-action-disabled-ink: #b48a3c;
-  border: 2px solid #f59e0b;
-  border-radius: 18px 18px 8px 8px;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(251 191 36 / .2), transparent 50%),
-    linear-gradient(160deg, #121216 0%, #09090b 48%, #09090b 100%);
-  box-shadow:
-    inset 0 0 0 3px #09090b,
-    inset 0 0 0 4.5px #fbbf24,
-    0 0 35px rgba(245 158 11 / .25),
-    0 26px 60px rgba(0 0 0 / .72);
-}
-.tombstone.tombstone-theme-obsidian-emas::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  opacity: .55;
-  background: repeating-linear-gradient(125deg, transparent 0 42px, rgba(251 191 36 / .07) 43px 43.5px, transparent 44px 86px);
-  pointer-events: none;
-}
-.tombstone.tombstone-theme-obsidian-emas .tombstone-title {
-  color: #fde68a;
-  font-family: var(--font-playfair), Georgia, serif;
-  text-shadow: 0 1px 0 rgba(120 53 15 / .8), 0 0 22px rgba(251 191 36 / .42);
-}
-
-/* 4. Marmer Lumut (VIP) — Deep emerald-jade marble, silver/mint veins */
-.tombstone.tombstone-theme-marmer-lumut,
-.tombstone[data-theme="marmer-lumut"] {
-  --theme-accent: #6ee7b7;
-  --tomb-ink: #f0fdf4;
-  --tomb-ink-muted: #a7f3d0;
-  --tomb-line: rgba(110 231 183 / .42);
-  --tomb-action-bg: rgba(16 185 129 / .18);
-  --tomb-action-ink: #ecfdf5;
-  --tomb-action-hover-bg: rgba(16 185 129 / .32);
-  --tomb-action-hover-border: #6ee7b7;
-  --tomb-action-disabled-bg: rgba(6 78 59 / .55);
-  --tomb-action-disabled-ink: #6ee7b7;
-  border: 2px solid #34d399;
-  border-radius: 96px 96px 14px 14px;
-  background:
-    radial-gradient(ellipse at 20% 85%, rgba(16 185 129 / .34), transparent 52%),
-    radial-gradient(ellipse at 84% 16%, rgba(167 243 208 / .18), transparent 45%),
-    linear-gradient(150deg, #064e3b 0%, #043b2d 50%, #022c22 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(209 250 229 / .24),
-    inset 0 0 28px rgba(16 185 129 / .16),
-    0 0 36px rgba(16 185 129 / .28),
-    0 26px 60px rgba(0 0 0 / .62);
-}
-.tombstone.tombstone-theme-marmer-lumut::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  opacity: .68;
-  background:
-    linear-gradient(128deg, transparent 16%, rgba(226 232 240 / .24) 16.5% 17%, transparent 17.8% 52%, rgba(167 243 208 / .22) 52.4% 53%, transparent 53.8%),
-    linear-gradient(62deg, transparent 34%, rgba(209 250 229 / .16) 34.4% 34.9%, transparent 35.6% 70%, rgba(2 44 34 / .65) 70.3% 71%, transparent 71.8%);
-  pointer-events: none;
-}
-.tombstone.tombstone-theme-marmer-lumut .tombstone-title {
-  color: #f8fafc;
-  text-shadow: 0 1px 2px rgba(2 44 34 / .9), 0 0 18px rgba(110 231 183 / .35);
-}
-
-/* 5. Y2K Chrome / Cyber (VIP) — Liquid chrome gradient, cyan/violet holo rim */
-.tombstone.tombstone-theme-y2k-chrome,
-.tombstone[data-theme="y2k-chrome"] {
-  --theme-accent: #38bdf8;
-  --tomb-ink: #ffffff;
-  --tomb-ink-muted: #e0f2fe;
-  --tomb-line: rgba(56 189 248 / .52);
-  --tomb-action-bg: rgba(24 24 27 / .72);
-  --tomb-action-ink: #f0f9ff;
-  --tomb-action-hover-bg: rgba(56 189 248 / .24);
-  --tomb-action-hover-border: #a855f7;
-  --tomb-action-disabled-bg: rgba(24 24 27 / .55);
-  --tomb-action-disabled-ink: #94a3b8;
-  border: 2px solid #38bdf8;
-  border-radius: 6px;
-  background:
-    linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 18%, #52525b 44%, #27272a 70%, #18181b 100%);
-  box-shadow:
-    inset 0 0 0 2px rgba(168 85 247 / .55),
-    inset 0 1px 0 rgba(255 255 255 / .7),
-    0 0 30px rgba(56 189 248 / .32),
-    0 0 46px rgba(168 85 247 / .24),
-    0 26px 60px rgba(0 0 0 / .66);
-}
-.tombstone.tombstone-theme-y2k-chrome::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  opacity: .55;
-  background:
-    linear-gradient(125deg, rgba(255 255 255 / .38) 0%, transparent 24%, rgba(56 189 248 / .18) 46%, rgba(168 85 247 / .24) 64%, transparent 82%),
-    repeating-linear-gradient(90deg, rgba(255 255 255 / .08) 0 1px, transparent 1px 10px);
-  pointer-events: none;
-}
-.tombstone.tombstone-theme-y2k-chrome .tombstone-cap { border-radius: 2px; border-top-color: #38bdf8; }
-.tombstone.tombstone-theme-y2k-chrome .tombstone-title {
-  color: #ffffff;
-  font-family: var(--font-space-grotesk), sans-serif;
-  font-weight: 700;
-  letter-spacing: -.03em;
-  text-shadow: 0 2px 10px rgba(9 9 11 / .85), 0 0 16px rgba(56 189 248 / .45);
-}
-
-/* 6. Crimson Velvet (VIP) — Deep royal blood-crimson, rose-gold border */
-.tombstone.tombstone-theme-crimson-velvet,
-.tombstone[data-theme="crimson-velvet"] {
-  --theme-accent: #fda4af;
-  --tomb-ink: #fff1f2;
-  --tomb-ink-muted: #fecdd3;
-  --tomb-line: rgba(253 164 175 / .46);
-  --tomb-action-bg: rgba(127 29 29 / .65);
-  --tomb-action-ink: #fff1f2;
-  --tomb-action-hover-bg: rgba(159 18 57 / .75);
-  --tomb-action-hover-border: #fda4af;
-  --tomb-action-disabled-bg: rgba(69 10 10 / .6);
-  --tomb-action-disabled-ink: #fda4af;
-  border: 2px solid #fda4af;
-  border-radius: 96px 96px 14px 14px;
-  background:
-    radial-gradient(ellipse at 50% 6%, rgba(244 63 94 / .32), transparent 50%),
-    linear-gradient(155deg, #7f1d1d 0%, #5c1010 52%, #450a0a 100%);
-  box-shadow:
-    inset 0 2px 0 rgba(254 205 211 / .28),
-    inset 0 0 32px rgba(225 29 72 / .18),
-    0 0 38px rgba(225 29 72 / .34),
-    0 26px 60px rgba(0 0 0 / .66);
-}
-.tombstone.tombstone-theme-crimson-velvet::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  opacity: .42;
-  background:
-    radial-gradient(circle at 50% 35%, rgba(253 164 175 / .12), transparent 60%),
-    repeating-linear-gradient(112deg, transparent 0 8px, rgba(254 205 211 / .055) 8px 9px, transparent 9px 17px);
-  pointer-events: none;
-}
-.tombstone.tombstone-theme-crimson-velvet .tombstone-title {
-  color: #fff1f2;
-  text-shadow: 0 2px 12px rgba(69 10 10 / .9), 0 0 20px rgba(253 164 175 / .36);
-}
-
-/* Monumen Abadi — ukuran, emblem, dan garis pengunci ----------- */
-.tombstone-vip { min-height: 486px; }
-.tombstone-vip::after { content: ""; position: absolute; z-index: 1; inset: 8px; border: 1px solid color-mix(in srgb, var(--theme-accent) 44%, transparent); border-radius: inherit; pointer-events: none; }
-.tombstone-vip .tombstone-cap { border-color: var(--theme-accent); }
-.tombstone-vip .tombstone-emblem { position: absolute; z-index: 3; top: 12px; left: 50%; display: grid; width: 34px; height: 34px; place-items: center; transform: translateX(-50%); border: 1.5px solid var(--theme-accent); border-radius: 50%; background: rgba(9 9 11 / .9); color: var(--theme-accent); box-shadow: 0 0 22px color-mix(in srgb, var(--theme-accent) 36%, transparent); }
-.tombstone-vip .tombstone-body { min-height: 486px; padding-top: 64px; }
-.tombstone-vip .tombstone-title { min-height: 5.2rem; font-size: clamp(1.15rem, 1.5vw, 1.5rem); }
-.tombstone-vip .tombstone-badge-vip { border-color: var(--theme-accent); color: var(--theme-accent); background: rgba(9 9 11 / .45); }
-.tombstone-vip .tombstone-eternal { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--theme-accent); font: 500 10px/1.4 var(--font-jetbrains-mono), monospace; letter-spacing: .04em; }
-.tombstone-vip .tombstone-ornament { color: var(--theme-accent); }
-
-/* Cahaya dan bayangan ------------------------------------------ */
-.tombstone-ground-shadow { position: absolute; z-index: 0; right: 4%; bottom: 0; left: 4%; height: 18px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0 0 0 / .55), transparent 72%); will-change: auto; }
-.tombstone-light { position: absolute; z-index: 2; inset: 0; opacity: 0; background: radial-gradient(220px circle at 50% 12%, rgba(255 232 183 / .2), rgba(245 158 11 / .06) 45%, transparent 72%); transition: opacity var(--duration-standard) var(--ease-standard); pointer-events: none; will-change: auto; }
+/* Monument Typography & Engraving Elements -------------------- */
+.tombstone-ground-shadow { position: absolute; z-index: 0; right: 10%; bottom: 58px; left: 10%; height: 20px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0 0 0 / .62), transparent 72%); pointer-events: none; }
+.tombstone-light { position: absolute; z-index: 5; inset: 0; opacity: 0; border-radius: 90px 90px 10px 10px; background: radial-gradient(240px circle at 50% 10%, rgba(255 238 200 / .16), rgba(214 168 90 / .05) 48%, transparent 72%); transition: opacity var(--duration-standard) var(--ease-standard); pointer-events: none; }
 .tombstone:hover .tombstone-light, .tombstone:focus-within .tombstone-light { opacity: 1; }
 
-/* Ukiran ------------------------------------------------------ */
 .tombstone-cap { position: absolute; z-index: 3; top: 18px; right: 26px; left: 26px; height: 14px; border-top: 1px solid var(--tomb-line); border-radius: 50%; pointer-events: none; }
-.tombstone-body { position: relative; z-index: 3; display: flex; width: 100%; min-height: 442px; flex: 1; flex-direction: column; padding: 52px 22px 18px; }
-.tombstone-topline { display: flex; min-height: 26px; align-items: start; justify-content: space-between; gap: var(--space-2); }
-.tombstone-badges { display: flex; min-width: 0; flex-wrap: wrap; gap: 4px; }
+.tombstone-topline { display: flex; width: 100%; min-height: 26px; align-items: start; justify-content: space-between; gap: var(--space-2); }
+.tombstone-badges { display: flex; min-width: 0; flex-wrap: wrap; justify-content: flex-start; gap: 4px; }
 .tombstone-badge { border-color: var(--tomb-line); color: var(--tomb-ink-muted); font-size: 9px; padding-inline: 6px; }
-.tombstone-id { flex: 0 0 auto; color: var(--tomb-ink-muted); font: 400 10px/1.4 var(--font-jetbrains-mono), monospace; }
-.tombstone-ornament { align-self: center; margin: var(--space-4) 0 6px; color: var(--tomb-ink-muted); opacity: .8; }
-.tombstone-title { position: relative; z-index: 4; width: 100%; min-height: 4.8rem; overflow: visible; border: 0; background: transparent; color: var(--tomb-ink); padding: 0; font-family: var(--font-playfair); font-size: clamp(1.05rem, 1.35vw, 1.35rem); font-weight: 600; line-height: 1.25; letter-spacing: -.01em; text-align: center; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; text-wrap: pretty; cursor: pointer; }
-.tombstone-title span { display: -webkit-box; max-width: 100%; overflow: hidden; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-.tombstone-title::after { position: absolute; z-index: 0; inset: -48px -16px -48px; content: ""; }
-.tombstone-title:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 4px; }
-.tombstone-life { min-height: 46px; margin-top: var(--space-2); color: var(--tomb-ink-muted); font: 400 10px/1.55 var(--font-jetbrains-mono), monospace; text-align: center; }
-.tombstone-life p { margin: 0; }
-.tombstone-divider { height: 1px; margin: var(--space-3) 0; background: linear-gradient(90deg, transparent, var(--tomb-line), transparent); }
-.tombstone-copy { min-height: 106px; }
-.tombstone-label { min-height: 1.2rem; margin: 0 0 4px; color: var(--tomb-ink-muted); font: 500 9px/1.5 var(--font-jetbrains-mono), monospace; letter-spacing: .14em; text-transform: uppercase; }
-.tombstone-cause { display: -webkit-box; min-height: 2.6rem; overflow: hidden; margin: 0; color: var(--tomb-ink); font-size: 12px; font-weight: 500; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
-.tombstone-epitaph { display: -webkit-box; min-height: 2.5rem; overflow: hidden; margin: var(--space-2) 0 0; color: var(--tomb-ink-muted); font: italic 15px/1.4 var(--font-playfair), Georgia, serif; text-align: center; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
-.tombstone-preservation { margin-top: var(--space-2); }
-.tombstone-erosion { display: grid; gap: 6px; }
-.erosion-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--tomb-ink-muted); font: 400 9px/1.3 var(--font-jetbrains-mono), monospace; letter-spacing: .02em; }
-.erosion-meta span:first-child { display: inline-flex; align-items: center; gap: 4px; }
-.tombstone-erosion .erosion-track { background: color-mix(in srgb, var(--tomb-ink) 14%, transparent); }
-.tombstone-erosion .erosion-track > span { background: linear-gradient(90deg, rgba(245 158 11 / .45), #f59e0b); }
+.tombstone-badge-vip { border-color: var(--theme-accent); color: var(--theme-accent); background: rgba(9 9 11 / .5); }
+.tombstone-id { flex: 0 0 auto; color: var(--tomb-ink-muted); font: 400 9px/1.4 var(--font-jetbrains-mono), monospace; opacity: .82; }
 
-.tombstone-actions { position: relative; z-index: 4; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: auto; border-top: 1px solid var(--tomb-line); padding-top: var(--space-3); }
-.tombstone-actions-single { grid-template-columns: minmax(0, 1fr); }
-.tombstone-actions .ui-button { min-width: 0; min-height: 34px; padding-inline: 8px; border-color: var(--tomb-line); background: var(--tomb-action-bg); color: var(--tomb-action-ink); font-size: 10.5px; }
+.tombstone-title {
+  position: relative;
+  z-index: 4;
+  display: -webkit-box;
+  width: 100%;
+  min-height: 3.5rem;
+  margin: 0;
+  overflow: hidden;
+  color: var(--tomb-ink);
+  font-family: var(--font-playfair), Georgia, serif;
+  font-size: clamp(1rem, 1.35vw, 1.35rem);
+  font-weight: 600;
+  line-height: 1.24;
+  letter-spacing: -.01em;
+  text-align: center;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.tombstone-life { display: grid; gap: 2px; margin: 0; color: var(--tomb-ink-muted); font: 400 10px/1.5 var(--font-jetbrains-mono), monospace; text-align: center; }
+.tombstone-label { min-height: 1.2rem; margin: 0 0 4px; color: var(--tomb-ink-muted); font: 500 9px/1.5 var(--font-jetbrains-mono), monospace; letter-spacing: .14em; text-transform: uppercase; }
+.tombstone-eternal { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; margin: 0; color: var(--theme-accent); font: 500 9.5px/1.35 var(--font-jetbrains-mono), monospace; letter-spacing: .04em; }
+
+.monument-capsule-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 45%, transparent);
+  border-radius: 999px;
+  background: rgba(9 9 11 / .75);
+  padding: 1px 6px;
+  color: var(--tomb-ink);
+  font-size: 9px;
+}
+
+.tombstone-actions { position: relative; z-index: 4; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; width: min(100%, 280px); margin-top: 8px; }
+.tombstone-actions .ui-button { min-width: 0; min-height: 32px; padding-inline: 10px; border-color: var(--tomb-line); background: var(--tomb-action-bg); color: var(--tomb-action-ink); font-size: 10.5px; }
 .tombstone-actions .ui-button:hover { border-color: var(--tomb-action-hover-border); background: var(--tomb-action-hover-bg); }
-.tombstone-actions .ui-button:active, .tombstone-actions .ui-button:focus-visible { border-color: var(--tomb-action-hover-border); }
 .tombstone-actions .ui-button:disabled { border-color: var(--tomb-action-disabled-border); background: var(--tomb-action-disabled-bg); color: var(--tomb-action-disabled-ink); opacity: 1; }
 .tombstone-actions .ui-button-label { min-width: 0; }
 .tombstone-actions .ui-spinner { color: currentColor; }
 
-/* Kelopak digital — animasi CSS pada opacity/transform saja ----- */
+/* Digital Petals (pure transform/opacity) --------------------- */
 .flower-burst { position: absolute; z-index: 6; top: 34%; left: 50%; width: 1px; height: 1px; pointer-events: none; }
-.digital-petal { position: absolute; display: block; width: 8px; height: 12px; border-radius: 60% 10% 60% 10%; background: linear-gradient(135deg, #ffd9dc, #d87078 70%); box-shadow: 0 0 8px rgba(216 112 120 / .45); opacity: 0; will-change: auto; transform: translate3d(var(--petal-x, 0px), -70px, 0) scale(var(--petal-scale, 1)); animation: petal-fall var(--petal-duration, 1.5s) cubic-bezier(.22, .61, .36, 1) var(--petal-delay, 0s) both; }
+.digital-petal { position: absolute; display: block; width: 8px; height: 12px; border-radius: 60% 10% 60% 10%; background: linear-gradient(135deg, #fde8e9, #c76b74 70%); box-shadow: 0 0 8px rgba(199 107 116 / .4); opacity: 0; transform: translate3d(var(--petal-x, 0px), -70px, 0) scale(var(--petal-scale, 1)); animation: petal-fall var(--petal-duration, 1.5s) cubic-bezier(.22, .61, .36, 1) var(--petal-delay, 0s) both; }
 @keyframes petal-fall {
   0% { opacity: 0; transform: translate3d(var(--petal-x, 0px), -70px, 0) rotate(0deg) scale(var(--petal-scale, 1)); }
   20%, 70% { opacity: 1; }
   100% { opacity: 0; transform: translate3d(var(--petal-drift, 0px), 140px, 0) rotate(var(--petal-rotate, 180deg)) scale(var(--petal-scale, 1)); }
 }
-.digital-petal-1 { background: linear-gradient(135deg, #ffe9c9, #e6a45f 70%); }
-.digital-petal-2 { background: linear-gradient(135deg, #f4e0ea, #b97a9c 70%); }
+.digital-petal-1 { background: linear-gradient(135deg, #fef0d3, #d6a85a 70%); }
+.digital-petal-2 { background: linear-gradient(135deg, #f3e4ee, #b4789a 70%); }
 .flower-burst-reduced { position: absolute; z-index: 6; top: 42%; left: 50%; color: var(--rose-bright); font-size: 12px; font-weight: 600; pointer-events: none; transform: translateX(-50%); }
 
-.tombstone-skeleton { width: 100%; min-height: 442px; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: 96px 96px 14px 14px; background: linear-gradient(145deg, rgba(45 43 49 / .8), rgba(20 19 23 / .9)); }
-.tombstone-skeleton-cap { display: block; width: 54%; height: 14px; margin: var(--space-6) auto 0; border-radius: 50%; }
-.tombstone-skeleton-body { display: block; height: 320px; margin: 42px var(--space-6) var(--space-4); }
+/* ============================================================
+   SIX DISTINCT MONUMENT MATERIALS (HIGH SPECIFICITY)
+   ============================================================ */
 
-@media (max-width: 640px) {
-  .tombstone, .tombstone-body, .tombstone-skeleton { min-height: 420px; }
-  .tombstone-vip, .tombstone-vip .tombstone-body { min-height: 462px; }
-  .tombstone-body { padding-inline: 18px; }
-  .tombstone-title { min-height: 4.4rem; font-size: clamp(1.05rem, 5vw, 1.25rem); }
+/* 1. Batu Lapuk (Free): weathered matte grey limestone, flat top */
+article.monument.tombstone.tombstone-theme-batu-lapuk,
+article.monument.tombstone[data-theme="batu-lapuk"] {
+  --theme-accent: #a1a1aa;
+  --tomb-ink: #e4e4e7;
+  --tomb-ink-muted: #a1a1aa;
+  --tomb-line: rgba(161 161 170 / .28);
+  --stone-border: #52525b;
+  --stone-bg: linear-gradient(160deg, #3f3f46 0%, #323238 54%, #27272a 100%);
+  --stone-shadow: inset 0 1px 0 rgba(255 255 255 / .08), inset -12px -10px 26px rgba(0 0 0 / .42), 12px 20px 36px rgba(0 0 0 / .46);
+  --stone-texture: radial-gradient(circle at 20% 25%, rgba(255 255 255 / .05) 0 1.5px, transparent 2px) 0 0 / 16px 16px, radial-gradient(circle at 75% 70%, rgba(0 0 0 / .24) 0 1.5px, transparent 2px) 0 0 / 22px 22px, repeating-linear-gradient(104deg, transparent 0 18px, rgba(255 255 255 / .022) 19px 20px, transparent 21px 36px);
 }
-@media (prefers-reduced-motion: reduce) {
-  .tombstone { animation: none; }
+article.monument.tombstone.tombstone-theme-batu-lapuk .monument-stone {
+  border: 1.5px solid #52525b;
+  border-radius: 10px 10px 4px 4px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
 }
+article.monument.tombstone.tombstone-theme-batu-lapuk .tombstone-cap { border-radius: 2px; border-top-color: rgba(161 161 170 / .25); }
+
+/* 2. Beton Retak (Free): cool industrial concrete brutalist slab */
+article.monument.tombstone.tombstone-theme-beton-retak,
+article.monument.tombstone[data-theme="beton-retak"] {
+  --theme-accent: #94a3b8;
+  --tomb-ink: #e2e8f0;
+  --tomb-ink-muted: #94a3b8;
+  --tomb-line: rgba(148 163 184 / .3);
+  --stone-border: #475569;
+  --stone-bg: linear-gradient(155deg, #334155 0%, #263344 52%, #1e293b 100%);
+  --stone-shadow: inset 0 1px 0 rgba(226 232 240 / .12), inset -14px -10px 30px rgba(0 0 0 / .46), 14px 22px 38px rgba(0 0 0 / .48);
+  --stone-texture: repeating-linear-gradient(90deg, rgba(15 23 42 / .16) 0 1px, transparent 1px 26px), linear-gradient(122deg, transparent 22%, rgba(15 23 42 / .55) 22.3% 22.7%, transparent 23%);
+}
+article.monument.tombstone.tombstone-theme-beton-retak .monument-stone {
+  border: 1.5px solid #475569;
+  border-radius: 2px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-beton-retak .tombstone-cap { border-radius: 0; }
+article.monument.tombstone.tombstone-theme-beton-retak .monument-pedestal-top { background: linear-gradient(180deg, #334155, #1e293b); }
+article.monument.tombstone.tombstone-theme-beton-retak .monument-pedestal-mid { border-color: rgba(148 163 184 / .28); background: linear-gradient(180deg, #263344, #0f172a); }
+
+/* 3. Obsidian Emas (VIP): pitch-black obsidian, gold double border, crown */
+article.monument.tombstone.tombstone-theme-obsidian-emas,
+article.monument.tombstone[data-theme="obsidian-emas"] {
+  --theme-accent: #fbbf24;
+  --tomb-ink: #fef3c7;
+  --tomb-ink-muted: #e2be76;
+  --tomb-line: rgba(245 158 11 / .45);
+  --tomb-action-bg: rgba(245 158 11 / .12);
+  --tomb-action-hover-bg: rgba(245 158 11 / .24);
+  --stone-border: #f59e0b;
+  --stone-bg: radial-gradient(circle at 50% 0%, rgba(251 191 36 / .2), transparent 50%), linear-gradient(160deg, #131316 0%, #09090b 48%, #09090b 100%);
+  --stone-shadow: inset 0 0 0 3px #09090b, inset 0 0 0 4.5px #fbbf24, 0 0 35px rgba(245 158 11 / .24), 0 24px 56px rgba(0 0 0 / .78);
+  --stone-texture: repeating-linear-gradient(125deg, transparent 0 42px, rgba(251 191 36 / .07) 43px 43.5px, transparent 44px 86px);
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-stone {
+  border: 2px solid #f59e0b;
+  border-radius: 14px 14px 4px 4px;
+  min-height: 318px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-stone::after {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  inset: 9px;
+  border: 1px solid rgba(251 191 36 / .46);
+  border-radius: 8px 8px 2px 2px;
+  content: "";
+  pointer-events: none;
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-crest {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid #fbbf24;
+  border-radius: 50%;
+  background: #09090b;
+  color: #fbbf24;
+  box-shadow: 0 0 18px rgba(245 158 11 / .45);
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .tombstone-title {
+  color: #fde68a;
+  text-shadow: 0 1px 0 rgba(120 53 15 / .85), 0 0 20px rgba(251 191 36 / .38);
+}
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-pedestal-top { border-top-color: rgba(251 191 36 / .52); background: linear-gradient(180deg, #1c1917, #09090b); }
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-pedestal-mid { border-color: rgba(245 158 11 / .6); background: linear-gradient(180deg, #141210, #09090b); }
+article.monument.tombstone.tombstone-theme-obsidian-emas .monument-offering { border-color: #fbbf24; background: #1c1305; color: #fef3c7; }
+
+/* 4. Marmer Lumut (VIP): deep emerald-jade marble, silver/mint veins */
+article.monument.tombstone.tombstone-theme-marmer-lumut,
+article.monument.tombstone[data-theme="marmer-lumut"] {
+  --theme-accent: #6ee7b7;
+  --tomb-ink: #f0fdf4;
+  --tomb-ink-muted: #a7f3d0;
+  --tomb-line: rgba(110 231 183 / .4);
+  --tomb-action-bg: rgba(16 185 129 / .16);
+  --tomb-action-hover-bg: rgba(16 185 129 / .28);
+  --stone-border: #34d399;
+  --stone-bg: radial-gradient(ellipse at 20% 86%, rgba(16 185 129 / .34), transparent 52%), radial-gradient(ellipse at 82% 16%, rgba(167 243 208 / .18), transparent 44%), linear-gradient(150deg, #064e3b 0%, #043b2d 50%, #022c22 100%);
+  --stone-shadow: inset 0 2px 0 rgba(209 250 229 / .26), inset 0 0 28px rgba(16 185 129 / .15), 0 0 34px rgba(16 185 129 / .25), 0 24px 54px rgba(0 0 0 / .64);
+  --stone-texture: linear-gradient(128deg, transparent 15%, rgba(226 232 240 / .26) 15.6% 16.2%, transparent 17% 50%, rgba(167 243 208 / .22) 50.4% 51.1%, transparent 52%), linear-gradient(62deg, transparent 34%, rgba(209 250 229 / .16) 34.4% 35%, transparent 35.8% 72%, rgba(2 44 34 / .65) 72.4% 73%, transparent 74%);
+}
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-stone {
+  border: 2px solid #34d399;
+  border-radius: 46% 46% 10px 10px / 20% 20% 10px 10px;
+  min-height: 318px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-stone::after {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  inset: 8px;
+  border: 1px solid rgba(167 243 208 / .34);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+article.monument.tombstone.tombstone-theme-marmer-lumut .tombstone-title {
+  color: #f8fafc;
+  text-shadow: 0 1px 2px rgba(2 44 34 / .9), 0 0 18px rgba(110 231 183 / .35);
+}
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-pedestal-top { border-top-color: rgba(110 231 183 / .45); background: linear-gradient(180deg, #065f46, #022c22); }
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-pedestal-mid { border-color: rgba(52 211 153 / .5); background: linear-gradient(180deg, #043b2d, #022019); }
+article.monument.tombstone.tombstone-theme-marmer-lumut .monument-offering { border-color: #34d399; background: #022c22; color: #ecfdf5; }
+
+/* 5. Y2K Chrome (VIP): liquid chrome metallic, cyan/violet holo rim */
+article.monument.tombstone.tombstone-theme-y2k-chrome,
+article.monument.tombstone[data-theme="y2k-chrome"] {
+  --theme-accent: #38bdf8;
+  --tomb-ink: #ffffff;
+  --tomb-ink-muted: #e0f2fe;
+  --tomb-line: rgba(56 189 248 / .48);
+  --tomb-action-bg: rgba(24 24 27 / .72);
+  --tomb-action-hover-bg: rgba(56 189 248 / .22);
+  --stone-border: #38bdf8;
+  --stone-bg: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 16%, #52525b 42%, #27272a 70%, #18181b 100%);
+  --stone-shadow: inset 0 0 0 2px rgba(168 85 247 / .62), inset 0 1px 0 rgba(255 255 255 / .72), 0 0 30px rgba(56 189 248 / .3), 0 0 42px rgba(168 85 247 / .22), 0 24px 56px rgba(0 0 0 / .7);
+  --stone-texture: linear-gradient(125deg, rgba(255 255 255 / .4) 0%, transparent 24%, rgba(56 189 248 / .2) 48%, rgba(168 85 247 / .24) 66%, transparent 82%), repeating-linear-gradient(90deg, rgba(255 255 255 / .09) 0 1px, transparent 1px 10px);
+}
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-stone {
+  border: 2px solid #38bdf8;
+  border-radius: 4px;
+  min-height: 318px;
+  clip-path: polygon(10% 0, 90% 0, 100% 10%, 100% 100%, 0 100%, 0 10%);
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-engraving { padding: 8px 6px; border-radius: 4px; background: rgba(9 9 11 / .46); }
+article.monument.tombstone.tombstone-theme-y2k-chrome .tombstone-title { color: #ffffff; font-family: var(--font-space-grotesk), sans-serif; font-weight: 700; letter-spacing: -.03em; text-shadow: 0 2px 10px rgba(9 9 11 / .9); }
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-pedestal-top { border-top-color: #38bdf8; background: linear-gradient(90deg, #52525b, #e4e4e7 50%, #3f3f46); }
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-pedestal-mid { border-color: #a855f7; background: linear-gradient(180deg, #27272a, #18181b); }
+article.monument.tombstone.tombstone-theme-y2k-chrome .monument-offering { border-color: #38bdf8; background: #18181b; color: #e0f2fe; }
+
+/* 6. Crimson Velvet (VIP): royal blood-crimson, rose-gold border */
+article.monument.tombstone.tombstone-theme-crimson-velvet,
+article.monument.tombstone[data-theme="crimson-velvet"] {
+  --theme-accent: #fda4af;
+  --tomb-ink: #fff1f2;
+  --tomb-ink-muted: #fecdd3;
+  --tomb-line: rgba(253 164 175 / .44);
+  --tomb-action-bg: rgba(127 29 29 / .62);
+  --tomb-action-hover-bg: rgba(159 18 57 / .72);
+  --stone-border: #fda4af;
+  --stone-bg: radial-gradient(ellipse at 50% 6%, rgba(244 63 94 / .32), transparent 50%), linear-gradient(155deg, #7f1d1d 0%, #5c1010 52%, #450a0a 100%);
+  --stone-shadow: inset 0 2px 0 rgba(254 205 211 / .28), inset 0 0 30px rgba(225 29 72 / .18), 0 0 36px rgba(225 29 72 / .32), 0 24px 56px rgba(0 0 0 / .7);
+  --stone-texture: radial-gradient(circle at 50% 34%, rgba(253 164 175 / .12), transparent 60%), repeating-linear-gradient(112deg, transparent 0 8px, rgba(254 205 211 / .055) 8px 9px, transparent 9px 17px);
+}
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-stone {
+  width: min(100%, 296px);
+  min-height: 318px;
+  border: 2px solid #fda4af;
+  border-radius: 48% 48% 8px 8px / 24% 24% 8px 8px;
+  background: var(--stone-bg);
+  box-shadow: var(--stone-shadow);
+}
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-stone::after {
+  display: block;
+  position: absolute;
+  z-index: 1;
+  inset: 8px;
+  border: 1px solid rgba(253 164 175 / .38);
+  border-radius: inherit;
+  content: "";
+  pointer-events: none;
+}
+article.monument.tombstone.tombstone-theme-crimson-velvet .tombstone-title {
+  color: #fff1f2;
+  text-shadow: 0 2px 12px rgba(69 10 10 / .9), 0 0 18px rgba(253 164 175 / .36);
+}
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-pedestal-top { border-top-color: rgba(253 164 175 / .5); background: linear-gradient(180deg, #7f1d1d, #450a0a); }
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-pedestal-mid { border-color: rgba(253 164 175 / .5); background: linear-gradient(180deg, #5c1010, #2a0707); }
+article.monument.tombstone.tombstone-theme-crimson-velvet .monument-offering { border-color: #fda4af; background: #450a0a; color: #fff1f2; }

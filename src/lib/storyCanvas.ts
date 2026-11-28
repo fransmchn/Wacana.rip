@@ -2,13 +2,26 @@ import { getTemaNisan } from "@/lib/themes";
 import { formatCompactRupiah, formatTanggal, getDurasiHari, getLabelDurasi } from "@/lib/utils";
 import type { Makam, NisanTema } from "@/types/graveyard";
 
-export type StoryTemplate = "struk" | "wrapped" | "aura";
+export type StoryTemplate = "struk" | "wrapped" | "aura" | "akta";
 
-export const STORY_TEMPLATES: Array<{ id: StoryTemplate; label: string; hint: string }> = [
+export const STORY_TEMPLATES: Array<{ id: StoryTemplate; label: string; hint: string; vipOnly?: boolean }> = [
   { id: "struk", label: "Struk Kegagalan", hint: "Thermal receipt" },
   { id: "wrapped", label: "Failure Wrapped", hint: "Minimalist editorial" },
   { id: "aura", label: "Brutalist Aura", hint: "Duotone poster" },
+  { id: "akta", label: "Akta Gugur Resmi", hint: "Sertifikat VIP", vipOnly: true },
 ];
+
+/** Nomor seri arsip deterministik untuk Akta Gugur Resmi (GRV-2026-XXXX). */
+export function getCertificateSerial(graveId: string): string {
+  let hash = 2166136261;
+  for (const ch of graveId) {
+    hash ^= ch.charCodeAt(0);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  const code = (hash % 9000 + 1000).toString(10);
+  const suffix = graveId.replace(/[^a-zA-Z0-9]/g, "").slice(-2).toUpperCase() || "VX";
+  return `GRV-2026-${code}${suffix}`;
+}
 
 export interface StoryRenderOptions {
   template: StoryTemplate;
@@ -226,6 +239,7 @@ export async function shareStoryImage(makam: Makam, options: StoryRenderOptions)
 function drawStory(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRenderOptions, fonts: Fonts): void {
   if (options.template === "struk") drawReceipt(ctx, makam, options, fonts);
   else if (options.template === "wrapped") drawFailureWrapped(ctx, makam, options, fonts);
+  else if (options.template === "akta") drawOfficialCertificate(ctx, makam, options, fonts);
   else drawBrutalistAura(ctx, makam, options, fonts);
 }
 
@@ -571,10 +585,258 @@ function drawFailureWrapped(ctx: CanvasRenderingContext2D, makam: Makam, options
   // 8. Minimalist Bottom Signature Bar
   divider(ctx, 132, W - 132, 1662, "rgba(244, 244, 245, 0.1)", 1.5);
 
+  if (options.vip) {
+    drawVipArchiveBadge(ctx, W / 2, 1622, fonts);
+  }
+
   setFont(ctx, fonts.mono, 21, "500");
   ctx.fillStyle = ZINC;
   const author = fit(ctx, makam.pembuat.toUpperCase(), 380);
   ctx.fillText(`BURIED BY ${author}  •  GRAVEYARD.RIP`, W / 2, 1732);
+}
+
+/* ================================================================== */
+/* 4. Akta Gugur Resmi — Official Archival Death Certificate (VIP)     */
+/* ================================================================== */
+function drawOfficialCertificate(ctx: CanvasRenderingContext2D, makam: Makam, options: StoryRenderOptions, fonts: Fonts): void {
+  const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
+  const serial = getCertificateSerial(makam.id);
+  const tema = getTemaNisan(options.theme);
+
+  // Museum dark gallery mat surround
+  ctx.fillStyle = "#0B0B0D";
+  ctx.fillRect(0, 0, W, H);
+  drawFilmGrain(ctx, 1400, 0.035);
+
+  const mx = 56;
+  const my = 96;
+  const mw = W - mx * 2;
+  const mh = H - my * 2;
+
+  // Archival parchment card with deep museum shadow
+  ctx.save();
+  ctx.shadowColor = "rgba(0, 0, 0, 0.72)";
+  ctx.shadowBlur = 64;
+  ctx.shadowOffsetY = 24;
+  roundRect(ctx, mx, my, mw, mh, 12);
+  ctx.fillStyle = "#F4EFE3";
+  ctx.fill();
+  ctx.restore();
+
+  // Warm parchment paper gradient & fine archival paper grain
+  ctx.save();
+  roundRect(ctx, mx, my, mw, mh, 12);
+  ctx.clip();
+  const paper = ctx.createLinearGradient(mx, my, mx + mw, my + mh);
+  paper.addColorStop(0, "#F7F3E9");
+  paper.addColorStop(0.5, "#F2ECDE");
+  paper.addColorStop(1, "#EAE2D0");
+  ctx.fillStyle = paper;
+  ctx.fillRect(mx, my, mw, mh);
+
+  // Subtle watermark crest in background
+  ctx.textAlign = "center";
+  setFont(ctx, fonts.serif, 280, "700");
+  ctx.fillStyle = "rgba(180, 134, 52, 0.05)";
+  ctx.fillText("✦", W / 2, my + 820);
+
+  // Double engraved museum border (outer brass + inner charcoal hairline)
+  ctx.strokeStyle = "#B8893A";
+  ctx.lineWidth = 3.5;
+  roundRect(ctx, mx + 28, my + 28, mw - 56, mh - 56, 6);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(28, 25, 23, 0.28)";
+  ctx.lineWidth = 1.25;
+  roundRect(ctx, mx + 42, my + 42, mw - 84, mh - 84, 3);
+  ctx.stroke();
+
+  // Ornamental corner brackets
+  const corners = [
+    [mx + 42, my + 42, 1, 1],
+    [mx + mw - 42, my + 42, -1, 1],
+    [mx + 42, my + mh - 42, 1, -1],
+    [mx + mw - 42, my + mh - 42, -1, -1],
+  ];
+  ctx.strokeStyle = "#B8893A";
+  ctx.lineWidth = 3;
+  corners.forEach(([cx, cy, dx, dy]) => {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + dy * 28);
+    ctx.lineTo(cx, cy);
+    ctx.lineTo(cx + dx * 28, cy);
+    ctx.stroke();
+  });
+
+  const ink = "#1B1917";
+  const inkSoft = "#57534E";
+  const goldDark = "#9A6F22";
+  const left = mx + 86;
+  const right = mx + mw - 86;
+  const innerW = right - left;
+
+  // Archival Serial Header Row
+  ctx.textAlign = "left";
+  setFont(ctx, fonts.mono, 18, "600");
+  ctx.fillStyle = inkSoft;
+  ctx.fillText(`NO. SERI: ${serial}`, left, my + 98);
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = goldDark;
+  ctx.fillText(options.vip ? "VIP ARCHIVE · ABADI" : "PRATINJAU AKTA", right, my + 98);
+
+  divider(ctx, left, right, my + 120, "rgba(184, 137, 58, 0.45)", 1.5);
+
+  // Masthead Crest + Title
+  ctx.textAlign = "center";
+  setFont(ctx, fonts.serif, 44, "600");
+  ctx.fillStyle = goldDark;
+  ctx.fillText("✦", W / 2, my + 188);
+
+  setFont(ctx, fonts.mono, 18, "600");
+  ctx.fillStyle = inkSoft;
+  ctx.fillText("ARSIP PERMANEN BUKIT KEHORMATAN  ·  GRAVEYARD", W / 2, my + 228);
+
+  setFont(ctx, fonts.serif, 64, "700");
+  ctx.fillStyle = ink;
+  ctx.fillText("AKTA GUGUR RESMI", W / 2, my + 312);
+
+  setFont(ctx, fonts.serif, 24, "italic 400");
+  ctx.fillStyle = inkSoft;
+  ctx.fillText("Dengan ini menerangkan bahwa mimpi berikut telah gugur secara terhormat:", W / 2, my + 362);
+
+  divider(ctx, left + 90, right - 90, my + 398, "rgba(27, 25, 23, 0.2)", 1.2);
+
+  // Monument Title Subject
+  setFont(ctx, fonts.serif, 56, "700");
+  ctx.fillStyle = ink;
+  const titleLines = wrap(ctx, makam.judul, innerW - 20, 2);
+  titleLines.forEach((line, idx) => {
+    ctx.fillText(line, W / 2, my + 480 + idx * 68);
+  });
+
+  const metaTop = my + 480 + titleLines.length * 68 + 18;
+  setFont(ctx, fonts.mono, 20, "600");
+  ctx.fillStyle = goldDark;
+  ctx.fillText(`KATEGORI ${makam.kategori.toUpperCase()}  •  MATERIAL ${tema.label.toUpperCase()}`, W / 2, metaTop);
+
+  // Official Archival Dossier Grid (2 columns, crisp hairlines)
+  const gridY = metaTop + 48;
+  divider(ctx, left, right, gridY, "rgba(27, 25, 23, 0.25)", 1.5);
+
+  const lossText = makam.kerugianRupiah ? formatCompactRupiah(makam.kerugianRupiah) : "Rp 0";
+  const timeText = makam.kerugianJam ? `${makam.kerugianJam} jam` : getLabelDurasi(durasi);
+  const dossier: Array<[string, string]> = [
+    ["TANGGAL LAHIR", formatTanggal(makam.tanggalMulai)],
+    ["TANGGAL GUGUR", formatTanggal(makam.tanggalMenyerah)],
+    ["USIA PERJUANGAN", getLabelDurasi(durasi)],
+    ["KERUGIAN TERCATAT", `${lossText} · ${timeText}`],
+    ["BUNGA PENGHORMATAN", `${makam.bunga} kelopak ditaburkan`],
+    ["STATUS ARSIP", options.vip ? "Abadi · Anti Erosi" : "Makam Umum"],
+  ];
+
+  const colW = innerW / 2;
+  dossier.forEach(([label, val], idx) => {
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    const x = left + col * colW + (col === 1 ? 26 : 0);
+    const y = gridY + 54 + row * 108;
+
+    ctx.textAlign = "left";
+    setFont(ctx, fonts.mono, 16, "600");
+    ctx.fillStyle = inkSoft;
+    ctx.fillText(label, x, y);
+
+    setFont(ctx, fonts.sans, 26, "600");
+    ctx.fillStyle = ink;
+    ctx.fillText(fit(ctx, val, colW - 36), x, y + 36);
+  });
+
+  // Cause & Epitaph Box
+  const causeY = gridY + 378;
+  divider(ctx, left, right, causeY, "rgba(27, 25, 23, 0.2)", 1.2);
+
+  ctx.textAlign = "center";
+  setFont(ctx, fonts.mono, 17, "600");
+  ctx.fillStyle = inkSoft;
+  ctx.fillText("PENYEBAB GUGUR", W / 2, causeY + 46);
+
+  setFont(ctx, fonts.sans, 28, "500");
+  ctx.fillStyle = ink;
+  const causeLines = wrap(ctx, makam.penyebab, innerW - 40, 2);
+  causeLines.forEach((line, idx) => {
+    ctx.fillText(line, W / 2, causeY + 90 + idx * 38);
+  });
+
+  const epY = causeY + 188;
+  setFont(ctx, fonts.serif, 38, "italic 600");
+  ctx.fillStyle = "#292524";
+  const epLines = wrap(ctx, `“${makam.epitaph}”`, innerW - 60, 2);
+  epLines.forEach((line, idx) => {
+    ctx.fillText(line, W / 2, epY + idx * 52);
+  });
+
+  // Embossed Gold Wax Curator Seal (bottom-center-right)
+  const sealX = W / 2;
+  const sealY = my + mh - 320;
+  ctx.save();
+  ctx.translate(sealX, sealY);
+  const sealGrad = ctx.createRadialGradient(-16, -16, 10, 0, 0, 82);
+  sealGrad.addColorStop(0, "#FDE68A");
+  sealGrad.addColorStop(0.55, "#D97706");
+  sealGrad.addColorStop(1, "#92400E");
+  ctx.beginPath();
+  ctx.arc(0, 0, 74, 0, Math.PI * 2);
+  ctx.fillStyle = sealGrad;
+  ctx.fill();
+  ctx.strokeStyle = "#78350F";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(0, 0, 62, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(254, 243, 199, 0.72)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  setFont(ctx, fonts.serif, 24, "700");
+  ctx.fillStyle = "#FFFBEB";
+  ctx.fillText("★ VIP ★", 0, -8);
+  setFont(ctx, fonts.mono, 15, "700");
+  ctx.fillText("SAH ABADI", 0, 18);
+  setFont(ctx, fonts.mono, 12, "600");
+  ctx.fillText("GRAVEYARD", 0, 38);
+  ctx.restore();
+
+  // Dual Signature Lines flanking the seal
+  const sigY = my + mh - 252;
+  divider(ctx, left, left + 250, sigY, "rgba(27, 25, 23, 0.45)", 1.5);
+  ctx.textAlign = "left";
+  setFont(ctx, fonts.serif, 28, "italic 600");
+  ctx.fillStyle = ink;
+  ctx.fillText(fit(ctx, makam.pembuat, 250), left, sigY - 14);
+  setFont(ctx, fonts.mono, 15, "600");
+  ctx.fillStyle = inkSoft;
+  ctx.fillText("PEZIARAH / PEMILIK", left, sigY + 26);
+
+  divider(ctx, right - 250, right, sigY, "rgba(27, 25, 23, 0.45)", 1.5);
+  ctx.textAlign = "right";
+  setFont(ctx, fonts.serif, 28, "italic 600");
+  ctx.fillStyle = goldDark;
+  ctx.fillText("Kurator Arsip", right, sigY - 14);
+  setFont(ctx, fonts.mono, 15, "600");
+  ctx.fillStyle = inkSoft;
+  ctx.fillText("BUKIT KEHORMATAN", right, sigY + 26);
+
+  // Archival Barcode & Registry Footer
+  drawBarcode(ctx, `${serial}-${makam.id}`, W / 2 - 210, my + mh - 180, 420, 62, "#292524");
+  ctx.textAlign = "center";
+  setFont(ctx, fonts.mono, 17, "600");
+  ctx.fillStyle = inkSoft;
+  ctx.fillText(`${serial}  •  GRAVEYARD.RIP`, W / 2, my + mh - 90);
+
+  ctx.restore();
 }
 
 /* ================================================================== */
@@ -807,14 +1069,33 @@ function drawBrutalistAura(ctx: CanvasRenderingContext2D, makam: Makam, options:
 /* ================================================================== */
 /* Shared Drawing Helpers                                              */
 /* ================================================================== */
+function drawVipArchiveBadge(ctx: CanvasRenderingContext2D, centerX: number, centerY: number, fonts: Fonts): void {
+  const text = "★ VIP ARCHIVE ★";
+  setFont(ctx, fonts.mono, 18, "700");
+  const w = ctx.measureText(text).width + 40;
+  const h = 38;
+  ctx.save();
+  roundRect(ctx, centerX - w / 2, centerY - h / 2, w, h, h / 2);
+  ctx.fillStyle = "rgba(234, 179, 8, 0.14)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(234, 179, 8, 0.65)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#FDE047";
+  ctx.fillText(text, centerX, centerY + 6);
+  ctx.restore();
+}
+
 function drawStoryFooter(ctx: CanvasRenderingContext2D, vip: boolean, color: string, fonts: Fonts): void {
   ctx.save();
   ctx.textAlign = "center";
   ctx.fillStyle = color;
   if (vip) {
-    setFont(ctx, fonts.mono, 22, "600");
-    ctx.globalAlpha = 0.78;
-    ctx.fillText("GRAVEYARD  •  graveyard.rip", W / 2, 1812);
+    setFont(ctx, fonts.mono, 21, "600");
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "#EAB308";
+    ctx.fillText("★ VIP ARCHIVE  •  GRAVEYARD.RIP", W / 2, 1812);
   } else {
     setFont(ctx, fonts.mono, 24, "700");
     ctx.globalAlpha = 0.92;

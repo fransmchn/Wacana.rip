@@ -29,6 +29,8 @@ export type Database = {
         lilin_count: number;
         tema?: string | null;
         is_vip?: boolean | null;
+        capsule_message?: string | null;
+        capsule_unlock_at?: string | null;
         created_at: string;
       }>;
       bunga: Table<{ id: string; makam_id: string; user_id: string; hari: string; created_at: string }>;

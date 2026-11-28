@@ -1,10 +1,11 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { isNisanTema } from "@/lib/themes";
+import { checkRateLimit, getClientIp } from "@/lib/rateLimit";
+import { isNisanTema, isTemaVip } from "@/lib/themes";
 import type { NisanTema } from "@/types/graveyard";
 
-interface MidtransNotification {
+interface PaymentWebhookPayload {
   order_id?: string;
   status_code?: string;
   gross_amount?: string;
@@ -15,7 +16,10 @@ interface MidtransNotification {
   custom_field2?: string;
 }
 
-function verifyMidtransSignature(payload: MidtransNotification, serverKey: string): boolean {
+const EXPECTED_VIP_PRICE = 15_000;
+const GRAVE_ID_RE = /^[a-zA-Z0-9_-]{4,64}$/;
+
+function verifySignature(payload: PaymentWebhookPayload, serverKey: string): boolean {
   const { order_id, status_code, gross_amount, signature_key } = payload;
   if (!order_id || !status_code || !gross_amount || !signature_key) return false;
   const expected = crypto
@@ -30,20 +34,39 @@ function verifyMidtransSignature(payload: MidtransNotification, serverKey: strin
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const rate = checkRateLimit(`pay-webhook:${ip}`, 60, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Terlalu banyak permintaan webhook." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
+      );
+    }
+
     const serverKey = process.env.MIDTRANS_SERVER_KEY?.trim();
     if (!serverKey) {
       return NextResponse.json({ error: "Konfigurasi webhook pembayaran belum aktif." }, { status: 503 });
     }
 
-    let body: MidtransNotification;
+    let body: PaymentWebhookPayload;
     try {
-      body = (await request.json()) as MidtransNotification;
+      body = (await request.json()) as PaymentWebhookPayload;
     } catch {
       return NextResponse.json({ error: "Payload webhook JSON tidak valid." }, { status: 400 });
     }
 
-    if (!verifyMidtransSignature(body, serverKey)) {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Payload webhook tidak valid." }, { status: 400 });
+    }
+
+    if (!verifySignature(body, serverKey)) {
       return NextResponse.json({ error: "Signature webhook tidak valid." }, { status: 403 });
+    }
+
+    // Validasi nominal pembayaran agar tidak bisa dimanipulasi
+    const paidAmount = Number(body.gross_amount);
+    if (!Number.isFinite(paidAmount) || Math.round(paidAmount) < EXPECTED_VIP_PRICE) {
+      return NextResponse.json({ error: "Nominal pembayaran tidak sesuai paket VIP." }, { status: 400 });
     }
 
     const status = body.transaction_status;
@@ -56,11 +79,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, ignored: true, transaction_status: status });
     }
 
-    const graveId = body.custom_field1?.trim();
-    const selectedTheme: NisanTema = isNisanTema(body.custom_field2) ? body.custom_field2 : "obsidian-emas";
+    const graveId = typeof body.custom_field1 === "string" ? body.custom_field1.trim() : "";
+    const selectedTheme: NisanTema =
+      isNisanTema(body.custom_field2) && isTemaVip(body.custom_field2)
+        ? body.custom_field2
+        : "obsidian-emas";
 
-    if (!graveId || graveId.startsWith("draft-")) {
-      return NextResponse.json({ ok: true, note: "graveId kosong atau draft; dilewati." });
+    if (!graveId || !GRAVE_ID_RE.test(graveId) || graveId.startsWith("draft-")) {
+      return NextResponse.json({ ok: true, note: "graveId tidak valid atau draft; dilewati." });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
@@ -72,10 +98,9 @@ export async function POST(request: Request) {
     }
 
     if (!serviceRoleKey) {
-      console.warn("[graveyard-webhook] SUPABASE_SERVICE_ROLE_KEY tidak diset; memakai anon key (update dapat terblokir RLS).");
+      console.warn("[graveyard-webhook] SUPABASE_SERVICE_ROLE_KEY belum diset; update menggunakan anon key bisa ditolak RLS.");
     }
 
-    // Admin/Service Role client untuk memperbarui public.makam secara atomik (memicu Supabase Realtime UPDATE)
     const admin = createClient(supabaseUrl, supabaseKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });

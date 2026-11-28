@@ -18,8 +18,8 @@ import { Button } from "@/components/ui/Button";
 import { HeroIllustration } from "@/components/HeroIllustration";
 import { useGraveyard } from "@/hooks/useGraveyard";
 import { useClientNow } from "@/hooks/useClientNow";
-import type { SortKey } from "@/components/FilterBar";
-import type { CreateMakamInput, Kategori, Makam } from "@/types/graveyard";
+import type { CreateMakamInput, Kategori, Makam, NisanTema, SortKey } from "@/types/graveyard";
+import { persistVipUpgrade } from "@/lib/graveyardService";
 import { getDurasiHari, getErosionInfo, type ErosionInfo } from "@/lib/utils";
 import { DEFAULT_TEMA } from "@/lib/themes";
 import { resolveTheme } from "@/lib/themeService";
@@ -153,6 +153,12 @@ export default function Home() {
     setLoginOpen(false);
     setProfileOpen(false);
   };
+  const switchVipTheme = async (item: Makam, tema: NisanTema) => {
+    await persistVipUpgrade(item.id, tema);
+    await refresh();
+    setSelected((current) => (current && current.id === item.id ? { ...current, tema } : current));
+  };
+
   const openStory = (item: Makam) => setStoryTarget(makam.find((entry) => entry.id === item.id) ?? item);
 
   function randomPilgrimage() {
@@ -225,9 +231,40 @@ export default function Home() {
         onRandom={randomPilgrimage}
       />
 
-      {selected && <GraveDetailModal makam={makam.find((item) => item.id === selected.id) ?? selected} onClose={() => setSelected(null)} onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))} onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })} flowerStatus={flowerStatus(selected.id)} flowerCountdown={flowerCountdown(selected.id)} vip={isVip(makam.find((item) => item.id === selected.id) ?? selected)} erosion={erosion(selected)} onUpgrade={upgrade} onOpenStory={openStory} />}
+      {selected && (() => {
+        const active = makam.find((item) => item.id === selected.id) ?? selected;
+        const activeVip = isVip(active);
+        const canEditVip = activeVip && (!configured || !active.userId || active.userId === user?.id);
+        return (
+          <GraveDetailModal
+            makam={active}
+            onClose={() => setSelected(null)}
+            onFlower={(id) => requireLogin(() => runRitual(() => bunga(id)))}
+            onComment={(id, input) => new Promise((resolve, reject) => { if (!user) { setLoginOpen(true); reject(new Error("Masuk dulu untuk meninggalkan doa.")); return; } void komentar(id, input).then(resolve).catch(reject); })}
+            flowerStatus={flowerStatus(active.id)}
+            flowerCountdown={flowerCountdown(active.id)}
+            vip={activeVip}
+            erosion={erosion(active)}
+            onUpgrade={upgrade}
+            onOpenStory={openStory}
+            onSwitchVipTheme={switchVipTheme}
+            canEditVip={canEditVip}
+          />
+        );
+      })()}
       {buryOpen && <BuryModal key={burySession} onClose={() => setBuryOpen(false)} onSubmit={kuburkan} onCreated={afterCreate} onVipTheme={vipThemeRequest} defaultAuthor={user ? profile.name : ""} />}
-      {storyTarget && <StoryStudioModal makam={makam.find((item) => item.id === storyTarget.id) ?? storyTarget} vip={isVip(makam.find((item) => item.id === storyTarget.id) ?? storyTarget)} theme={resolveTheme(makam.find((item) => item.id === storyTarget.id) ?? storyTarget)} onClose={() => setStoryTarget(null)} />}
+      {storyTarget && (() => {
+        const activeStory = makam.find((item) => item.id === storyTarget.id) ?? storyTarget;
+        return (
+          <StoryStudioModal
+            makam={activeStory}
+            vip={isVip(activeStory)}
+            theme={resolveTheme(activeStory)}
+            onClose={() => setStoryTarget(null)}
+            onUpgrade={(target) => { setStoryTarget(null); upgrade(target); }}
+          />
+        );
+      })()}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
       {profileOpen && user && <ProfileModal user={user} profile={profileRecord} onClose={() => setProfileOpen(false)} onSave={async (patch) => { await mutateProfile(patch); }} onLogout={() => void signOut()} />}
       <Footer />

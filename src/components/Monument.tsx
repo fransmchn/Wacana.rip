@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from "react";
-import { Check, Crown, Flower2, Hourglass, Sparkles } from "lucide-react";
+import { Check, Crown, Flower2, Hourglass, Lock, Sparkles } from "lucide-react";
 import { FlowerBurst } from "@/components/FlowerBurst";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { resolveTheme } from "@/lib/themeService";
 import { getTemaNisan } from "@/lib/themes";
+import { getCapsuleStatus, getTimeCapsule } from "@/lib/timeCapsuleService";
 import type { Makam } from "@/types/graveyard";
 import type { ErosionInfo } from "@/lib/utils";
 import { getDurasiHari, getLabelDurasi } from "@/lib/utils";
@@ -46,7 +47,9 @@ export function Monument({ makam, plotIndex, zone, onSelect, onFlower, flowerSta
   const [flowerBurst, setFlowerBurst] = useState(false);
   const tema = getTemaNisan(resolveTheme(makam));
   const durasi = getDurasiHari(makam.tanggalMulai, makam.tanggalMenyerah);
-  const landmark = isVip || tema.vip;
+  const landmark = isVip;
+  const capsule = landmark ? getTimeCapsule(makam) : null;
+  const capsuleStatus = capsule ? getCapsuleStatus(capsule) : null;
   const years = `${makam.tanggalMulai.slice(0, 4)} — ${makam.tanggalMenyerah.slice(0, 4)}`;
   const plot = PLOTS[plotIndex % PLOTS.length];
   const style = {
@@ -92,12 +95,6 @@ export function Monument({ makam, plotIndex, zone, onSelect, onFlower, flowerSta
       <span className="tombstone-light" aria-hidden="true" />
       <FlowerBurst active={flowerBurst} onDone={() => setFlowerBurst(false)} />
 
-      <div className="monument-pedestal" aria-hidden="true">
-        <span className="monument-pedestal-top" />
-        <span className="monument-pedestal-mid" />
-        <span className="monument-pedestal-base" />
-      </div>
-
       <div className="monument-stone">
         <span className="tombstone-cap" aria-hidden="true" />
         {tema.id === "beton-retak" && (
@@ -128,6 +125,12 @@ export function Monument({ makam, plotIndex, zone, onSelect, onFlower, flowerSta
         </div>
       </div>
 
+      <div className="monument-pedestal" aria-hidden="true">
+        <span className="monument-pedestal-top" />
+        <span className="monument-pedestal-mid" />
+        <span className="monument-pedestal-base" />
+      </div>
+
       <span className="monument-offering" aria-label={`${makam.bunga} bunga ditaburkan`}>
         <Flower2 size={14} aria-hidden="true" />
         <span>{makam.bunga}</span>
@@ -135,7 +138,15 @@ export function Monument({ makam, plotIndex, zone, onSelect, onFlower, flowerSta
 
       <div className="monument-condition">
         {landmark ? (
-          <p className="tombstone-eternal"><Crown size={12} aria-hidden="true" /> {tema.label} · abadi</p>
+          <p className="tombstone-eternal">
+            <Crown size={12} aria-hidden="true" /> {tema.label} · abadi
+            {capsuleStatus && (
+              <span className="monument-capsule-tag">
+                <Lock size={10} aria-hidden="true" />
+                {capsuleStatus.locked ? `${capsuleStatus.daysLeft}h` : "Buka"}
+              </span>
+            )}
+          </p>
         ) : (
           <div className="monument-erosion">
             <span className="monument-erosion-label"><Hourglass size={11} aria-hidden="true" /> {erosion.label}</span>
