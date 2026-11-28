@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactElement } from "react";
 import { Award, Crown, Flower2, Hourglass, Lock, LockOpen, MessageCircle, Sparkles } from "lucide-react";
 import { FlowerBurst } from "@/components/FlowerBurst";
 import { Dialog } from "@/components/ui/Dialog";
@@ -63,18 +63,20 @@ export function GraveDetailModal({
   onOpenStory,
   onSwitchVipTheme,
   canEditVip = false,
-}: GraveDetailModalProps) {
+}: GraveDetailModalProps): ReactElement | null {
   const { toast } = useToast();
   const [input, setInput] = useState<KomentarInput>({ nama: "", isi: "" });
   const [saving, setSaving] = useState(false);
   const [flowerBurst, setFlowerBurst] = useState(false);
-  const [capsule, setCapsule] = useState<TimeCapsule | null>(() => getTimeCapsule(makam));
+  const [capsule, setCapsule] = useState<TimeCapsule | null>(() => (makam ? getTimeCapsule(makam) : null));
   const [capsuleDraft, setCapsuleDraft] = useState("");
   const [capsuleDate, setCapsuleDate] = useState(() => addMonthsIso(6));
   const [capsuleOpenForm, setCapsuleOpenForm] = useState(false);
   const [capsuleSaving, setCapsuleSaving] = useState(false);
   const [capsuleUnsealed, setCapsuleUnsealed] = useState(false);
   const [switchingTheme, setSwitchingTheme] = useState(false);
+
+  if (!makam) return null;
 
   const tema = getTemaNisan(resolveTheme(makam));
   const serial = getCertificateSerial(makam.id);

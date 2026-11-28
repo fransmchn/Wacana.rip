@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { Award, Crown, Download, Flame, Lock, ReceiptText, Share2, Sparkles } from "lucide-react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
@@ -23,7 +23,7 @@ interface StoryStudioModalProps {
   onUpgrade?: (makam: Makam) => void;
 }
 
-export function StoryStudioModal({ makam, vip, theme, onClose, onUpgrade }: StoryStudioModalProps) {
+export function StoryStudioModal({ makam, vip, theme, onClose, onUpgrade }: StoryStudioModalProps): ReactElement | null {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [template, setTemplate] = useState<StoryTemplate>("struk");
@@ -32,17 +32,19 @@ export function StoryStudioModal({ makam, vip, theme, onClose, onUpgrade }: Stor
 
   const activeMeta = STORY_TEMPLATES.find((t) => t.id === template);
   const lockedAkta = Boolean(activeMeta?.vipOnly && !vip);
-  const serial = getCertificateSerial(makam.id);
+  const serial = makam ? getCertificateSerial(makam.id) : "";
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !makam) return;
     let cancelled = false;
     void renderStoryCanvas(canvas, makam, { template, vip, theme }, 0.5).catch(() => {
       if (!cancelled) toast("Pratinjau story gagal dirender.", "danger");
     });
     return () => { cancelled = true; };
   }, [makam, template, vip, theme, toast]);
+
+  if (!makam) return null;
 
   async function handleDownload() {
     if (lockedAkta) {
